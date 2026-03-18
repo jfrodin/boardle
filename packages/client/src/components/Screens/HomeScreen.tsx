@@ -48,6 +48,8 @@ export function HomeScreen(): React.ReactElement {
             Find Opponent
           </button>
         </section>
+
+        <p className="copyright">© {new Date().getFullYear()} Fredagsprinsen</p>
       </div>
     </div>
   );
