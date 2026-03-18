@@ -180,6 +180,102 @@ export function applyMove(state: GameState, move: Move): GameState {
   return next;
 }
 
+// ---- Animation support ----
+
+export interface DropPosition {
+  side: 0 | 1;
+  pit: number; // 0..PITS_PER_SIDE-1 = pit, PITS_PER_SIDE = store
+}
+
+export type DropKind = 'normal' | 'capture' | 'sweep';
+
+export interface AnimationStep {
+  board: Board;
+  drop: DropPosition;
+  kind: DropKind;
+}
+
+/**
+ * Returns the sequence of board states produced by distributing stones one by one.
+ * The source pit is emptied before the first step (the "pick up" moment).
+ * Each step adds exactly one stone and records where it landed.
+ * Capture and sweep transitions are appended as extra steps at the end.
+ */
+export function getMoveSteps(state: GameState, move: Move): AnimationStep[] {
+  if (!isLegalMove(state, move)) return [];
+
+  const steps: AnimationStep[] = [];
+  const board = cloneBoard(state.board);
+  const si = sideIndex(move.side);
+  const oi = si === SOUTH ? NORTH : SOUTH;
+
+  let stones = board.pits[si][move.pitIndex];
+  board.pits[si][move.pitIndex] = 0;
+
+  let curSide = si;
+  let curPit = move.pitIndex + 1;
+  let lastSide = si;
+  let lastPit = move.pitIndex;
+
+  while (stones > 0) {
+    if (curPit > PITS_PER_SIDE) {
+      curSide = curSide === SOUTH ? NORTH : SOUTH;
+      curPit = 0;
+    }
+
+    if (curPit === PITS_PER_SIDE) {
+      if (curSide === oi) {
+        curSide = curSide === SOUTH ? NORTH : SOUTH;
+        curPit = 0;
+        continue;
+      }
+      board.stores[curSide]++;
+      stones--;
+      lastSide = curSide;
+      lastPit = PITS_PER_SIDE;
+      steps.push({ board: cloneBoard(board), drop: { side: curSide, pit: PITS_PER_SIDE }, kind: 'normal' });
+      curPit++;
+    } else {
+      board.pits[curSide][curPit]++;
+      stones--;
+      lastSide = curSide;
+      lastPit = curPit;
+      steps.push({ board: cloneBoard(board), drop: { side: curSide, pit: curPit }, kind: 'normal' });
+      curPit++;
+    }
+  }
+
+  // Capture step
+  const landedInOwnPit = lastSide === si && lastPit < PITS_PER_SIDE;
+  if (landedInOwnPit && board.pits[si][lastPit] === 1) {
+    const mirrorPit = PITS_PER_SIDE - 1 - lastPit;
+    const opponentStones = board.pits[oi][mirrorPit];
+    if (opponentStones > 0) {
+      board.stores[si] += opponentStones + 1;
+      board.pits[oi][mirrorPit] = 0;
+      board.pits[si][lastPit] = 0;
+      steps.push({ board: cloneBoard(board), drop: { side: si, pit: PITS_PER_SIDE }, kind: 'capture' });
+    }
+  }
+
+  // Sweep step
+  const southEmpty = board.pits[SOUTH].every(p => p === 0);
+  const northEmpty = board.pits[NORTH].every(p => p === 0);
+  if (southEmpty || northEmpty) {
+    const sweepSide = southEmpty ? NORTH : SOUTH;
+    if (southEmpty) {
+      board.stores[NORTH] += board.pits[NORTH].reduce((a, b) => a + b, 0);
+      board.pits[NORTH].fill(0);
+    } else {
+      board.stores[SOUTH] += board.pits[SOUTH].reduce((a, b) => a + b, 0);
+      board.pits[SOUTH].fill(0);
+    }
+    steps.push({ board: cloneBoard(board), drop: { side: sweepSide, pit: PITS_PER_SIDE }, kind: 'sweep' });
+  }
+
+  return steps;
+}
+
 /** Total stones currently in play (should always equal PITS_PER_SIDE * 2 * INITIAL_STONES = 48) */
 export function totalStones(board: Board): number {
   return (

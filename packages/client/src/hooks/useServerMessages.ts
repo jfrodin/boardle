@@ -5,7 +5,7 @@ import { useGameStore } from '../store/gameStore.ts';
 import { useUiStore } from '../store/uiStore.ts';
 
 export function useServerMessages(): void {
-  const { setGame, setRoomId, queueAnimation } = useGameStore();
+  const { setGame, setRoomId, enqueueAnimation } = useGameStore();
   const { setScreen, setOpponentDisconnected } = useUiStore();
 
   useEffect(() => {
@@ -24,19 +24,16 @@ export function useServerMessages(): void {
           break;
 
         case 'STATE_UPDATE':
-          queueAnimation(msg.lastMove, msg.state);
+          enqueueAnimation(msg.lastMove, msg.state);
           break;
 
         case 'GAME_OVER':
           if (msg.lastMove) {
-            queueAnimation(msg.lastMove, msg.state);
+            enqueueAnimation(msg.lastMove, msg.state);
           } else {
-            useGameStore.getState().setGame(
-              msg.state,
-              useGameStore.getState().playerSide!,
-              useGameStore.getState().mode!,
-              useGameStore.getState().skill ?? undefined,
-            );
+            // No move to animate (e.g. reconnect scenario) — just apply state
+            const s = useGameStore.getState();
+            setGame(msg.state, s.playerSide!, s.mode!, s.skill ?? undefined);
           }
           break;
 
@@ -54,5 +51,5 @@ export function useServerMessages(): void {
       }
     });
     return remove;
-  }, [setGame, setRoomId, queueAnimation, setScreen, setOpponentDisconnected]);
+  }, [setGame, setRoomId, enqueueAnimation, setScreen, setOpponentDisconnected]);
 }
