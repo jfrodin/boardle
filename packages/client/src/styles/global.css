@@ -154,6 +154,19 @@ button { cursor: pointer; border: none; font: inherit; }
 }
 .back-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 .mode-label { color: var(--text-muted); font-size: 0.85rem; }
+.speed-selector { display: flex; gap: 0.25rem; }
+.speed-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--bg-board);
+  border: 1px solid transparent;
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+  line-height: 1;
+}
+.speed-btn:hover { border-color: var(--accent); }
+.speed-btn.active { background: var(--accent); border-color: var(--accent-light); }
 
 /* === Turn Indicator === */
 .turn-indicator {
