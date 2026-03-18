@@ -1,0 +1,21 @@
+{
+  "name": "@kalaha/server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@fastify/websocket": "^11.2.0",
+    "@kalaha/shared": "*",
+    "fastify": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.19.3",
+    "typescript": "*"
+  }
+}
