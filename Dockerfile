@@ -2,7 +2,7 @@
 FROM node:22-alpine AS build-shared
 WORKDIR /app
 # Copy ALL package.json files so npm workspaces can resolve everything
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/client/package.json packages/client/
 COPY packages/server/package.json packages/server/
