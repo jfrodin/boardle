@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Fastify from 'fastify';
+import fastifyCors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyJwt from '@fastify/jwt';
@@ -45,15 +46,10 @@ export function buildApp(opts: AppOptions) {
   // WebSocket support
   fastify.register(fastifyWebsocket);
 
-  // CORS — skip for WebSocket upgrade requests
-  fastify.addHook('onRequest', async (_req, reply) => {
-    if (_req.url.startsWith('/ws')) return;
-    reply.header('Access-Control-Allow-Origin', opts.corsOrigin);
-    reply.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (_req.method === 'OPTIONS') {
-      await reply.status(204).send();
-    }
+  // CORS
+  fastify.register(fastifyCors, {
+    origin: opts.corsOrigin,
+    methods: ['GET', 'POST', 'OPTIONS'],
   });
 
   fastify.get('/health', async () => ({ status: 'ok' }));
