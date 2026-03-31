@@ -1,8 +1,3 @@
-# fly.toml app configuration file generated for boardle on 2026-03-31T10:45:44Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'boardle'
 primary_region = 'ams'
 
@@ -26,8 +21,14 @@ primary_region = 'ams'
     hard_limit = 25
     soft_limit = 20
 
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 256
