@@ -15,7 +15,7 @@ const fastify = buildApp({ dbPath: DB_PATH, jwtSecret: JWT_SECRET, corsOrigin: C
 
 try {
   await fastify.listen({ port: PORT, host: HOST });
-  console.log(`Boardly server running on port ${PORT}`);
+  console.log(`Boardle server running on port ${PORT}`);
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);

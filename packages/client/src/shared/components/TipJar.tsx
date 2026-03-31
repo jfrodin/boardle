@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const KOFI_URL = 'https://ko-fi.com/boardly';
+const KOFI_URL = 'https://ko-fi.com/boardle';
 
 export function TipJar(): React.ReactElement {
   const [expanded, setExpanded] = useState(false);

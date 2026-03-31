@@ -50,7 +50,7 @@ export function PortalHome(): React.ReactElement {
     <div className="screen portal-screen">
       <div className="portal-content">
         <header className="portal-header">
-          <h1 className="portal-title">Boardly</h1>
+          <h1 className="portal-title">Boardle</h1>
           <p className="portal-subtitle">Classic board games, online & vs AI</p>
 
           <div className="portal-auth-bar">
@@ -96,7 +96,7 @@ export function PortalHome(): React.ReactElement {
         </div>
 
         <footer className="portal-footer">
-          <span className="copyright">© {new Date().getFullYear()} Boardly</span>
+          <span className="copyright">© {new Date().getFullYear()} Boardle</span>
         </footer>
       </div>
     </div>
