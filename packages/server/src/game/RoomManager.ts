@@ -1,36 +1,42 @@
 import type { WebSocket } from '@fastify/websocket';
-import type { AiSkill, PlayerSide } from '@kalaha/shared';
+import type { AiSkill, PlayerSide } from '@boardly/shared';
 import { GameRoom } from './GameRoom.js';
+
+interface QueueEntry {
+  ws: WebSocket;
+  username: string;
+  resolve: (room: GameRoom) => void;
+}
 
 export class RoomManager {
   private rooms = new Map<string, GameRoom>();
-  private matchQueue: { ws: WebSocket; resolve: (room: GameRoom) => void }[] = [];
+  private matchQueue: QueueEntry[] = [];
 
-  createAiRoom(ws: WebSocket, skill: AiSkill): GameRoom {
-    const room = new GameRoom('ai', skill);
-    room.addPlayer(ws);
+  createAiRoom(
+    ws: WebSocket,
+    skill: AiSkill,
+    animDelay?: number,
+    playerUsername?: string,
+    aiUsername?: string,
+  ): GameRoom {
+    const room = new GameRoom('ai', skill, animDelay);
+    room.addPlayer(ws, playerUsername ?? 'Player', aiUsername ?? `AI (${skill})`);
     this.rooms.set(room.id, room);
     return room;
   }
 
-  /**
-   * Join the matchmaking queue. Returns a promise that resolves when
-   * a second player joins or creates a room.
-   */
-  joinQueue(ws: WebSocket): Promise<GameRoom> {
+  joinQueue(ws: WebSocket, user: { userId: string; username: string }): Promise<GameRoom> {
     return new Promise(resolve => {
       if (this.matchQueue.length > 0) {
-        // Pair with the first waiting player
         const waiting = this.matchQueue.shift()!;
         const room = new GameRoom('online');
+        room.addPlayer(waiting.ws, waiting.username, user.username);
+        room.addPlayer(ws, user.username, waiting.username);
         waiting.resolve(room);
-        room.addPlayer(waiting.ws);
-        room.addPlayer(ws);
         this.rooms.set(room.id, room);
         resolve(room);
       } else {
-        this.matchQueue.push({ ws, resolve });
-        // Send waiting message — caller handles this
+        this.matchQueue.push({ ws, username: user.username, resolve });
       }
     });
   }

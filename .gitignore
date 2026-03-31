@@ -26,3 +26,12 @@ Thumbs.db
 
 # Vite
 packages/client/.vite/
+
+# SQLite database (contains real user data — never commit)
+packages/server/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets
+.env.production

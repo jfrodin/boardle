@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@kalaha/shared': path.resolve(__dirname, '../shared/src/index.ts'),
+      '@boardly/shared': path.resolve(__dirname, '../shared/src/index.ts'),
     },
   },
   server: {
@@ -15,6 +15,10 @@ export default defineConfig({
       '/ws': {
         target: 'ws://localhost:3001',
         ws: true,
+        changeOrigin: true,
+      },
+      '/auth': {
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     },

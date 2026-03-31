@@ -8,15 +8,19 @@ import type {
   ServerMessage,
   ClientMessage,
   GameMode,
-} from '@kalaha/shared';
-import { createInitialState, applyMove, isLegalMove } from '@kalaha/shared';
-import { getAiMove } from '../ai/AiPlayer.js';
+} from '@boardly/shared';
+import { createInitialState, applyMove, isLegalMove } from '@boardly/shared';
+import { getAiMove } from '../games/kalaha/AiPlayer.js';
 
 const RECONNECT_GRACE_MS = 30_000;
+const DEFAULT_AI_DELAY_MS = 400;
 
 interface Player {
   ws: WebSocket | null;
   side: PlayerSide;
+  username: string;
+  /** Username of the opponent, sent in GAME_START */
+  opponentUsername: string;
   disconnectTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -28,11 +32,13 @@ export class GameRoom {
   private state: GameState;
   private players: Player[] = [];
   private closed = false;
+  private aiDelayMs: number;
 
-  constructor(mode: GameMode, skill?: AiSkill) {
+  constructor(mode: GameMode, skill?: AiSkill, aiDelayMs?: number) {
     this.id = randomUUID();
     this.mode = mode;
     this.skill = skill;
+    this.aiDelayMs = aiDelayMs ?? DEFAULT_AI_DELAY_MS;
     this.state = createInitialState();
   }
 
@@ -44,16 +50,18 @@ export class GameRoom {
     return this.players.filter(p => p.ws !== null).length;
   }
 
-  addPlayer(ws: WebSocket): PlayerSide {
+  /**
+   * Add a player to the room.
+   * @param username - display name for this player
+   * @param opponentUsername - display name shown to this player for their opponent
+   */
+  addPlayer(ws: WebSocket, username: string, opponentUsername: string): PlayerSide {
     if (this.isFull) throw new Error('Room is full');
     const side: PlayerSide = this.players.length === 0 ? 'SOUTH' : 'NORTH';
-    this.players.push({ ws, side });
+    this.players.push({ ws, side, username, opponentUsername });
     return side;
   }
 
-  /**
-   * Start the game and notify connected players.
-   */
   start(): void {
     this.state = createInitialState();
     for (const player of this.players) {
@@ -64,12 +72,10 @@ export class GameRoom {
           side: player.side,
           mode: this.mode,
           skill: this.skill,
+          opponentUsername: player.opponentUsername,
         });
       }
     }
-
-    // If AI game, AI is NORTH. If it's NORTH's turn first somehow, trigger AI.
-    // Standard game starts with SOUTH so no immediate AI move needed.
   }
 
   handleMessage(ws: WebSocket, msg: ClientMessage): void {
@@ -115,14 +121,12 @@ export class GameRoom {
 
     this.broadcast({ type: 'STATE_UPDATE', state: this.state, lastMove: move });
 
-    // If AI game and it's now NORTH's (AI's) turn, make AI move
     if (this.mode === 'ai' && this.state.currentTurn === 'NORTH') {
       this.triggerAiMoves();
     }
   }
 
   private triggerAiMoves(): void {
-    // AI may get extra turns (chain), so loop until it's human's turn or game over
     setTimeout(() => {
       while (
         this.state.status === 'ACTIVE' &&
@@ -139,13 +143,12 @@ export class GameRoom {
 
         this.broadcast({ type: 'STATE_UPDATE', state: this.state, lastMove: aiMove });
       }
-    }, 400); // small delay so the UI can show the human move first
+    }, this.aiDelayMs);
   }
 
   private handleRematch(): void {
     this.state = createInitialState();
     for (const player of this.players) {
-      // Swap sides for fairness
       player.side = player.side === 'SOUTH' ? 'NORTH' : 'SOUTH';
     }
     this.start();
@@ -158,12 +161,10 @@ export class GameRoom {
 
     if (this.mode === 'online') {
       this.broadcastExcept(ws, { type: 'OPPONENT_DISCONNECTED' });
-      // Grace period for reconnection
       player.disconnectTimer = setTimeout(() => {
         this.closed = true;
       }, RECONNECT_GRACE_MS);
     } else {
-      // AI game: human disconnected, close room immediately
       this.closed = true;
     }
   }
@@ -178,8 +179,14 @@ export class GameRoom {
     }
     player.ws = ws;
 
-    // Resync state
-    this.send(ws, { type: 'GAME_START', state: this.state, side, mode: this.mode, skill: this.skill });
+    this.send(ws, {
+      type: 'GAME_START',
+      state: this.state,
+      side,
+      mode: this.mode,
+      skill: this.skill,
+      opponentUsername: player.opponentUsername,
+    });
     return true;
   }
 

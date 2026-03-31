@@ -1,5 +1,5 @@
 {
-  "name": "kalaha",
+  "name": "boardly",
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {

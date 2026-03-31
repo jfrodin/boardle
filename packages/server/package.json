@@ -1,5 +1,5 @@
 {
-  "name": "@kalaha/server",
+  "name": "@boardly/server",
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/main.js",
@@ -9,11 +9,19 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/rate-limit": "^10.2.2",
     "@fastify/websocket": "^11.2.0",
-    "@kalaha/shared": "*",
-    "fastify": "^5.3.2"
+    "@boardly/shared": "*",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.10.0",
+    "drizzle-orm": "^0.44.0",
+    "fastify": "^5.3.2",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.5.0",
     "tsx": "^4.19.3",
     "typescript": "*"

@@ -38,19 +38,23 @@ export interface Move {
 
 // ---- WebSocket protocol ----
 
+/** Game identifier — used to route messages when multiple games share one server */
+export type GameId = 'kalaha';
+
 export type ClientMessage =
-  | { type: 'JOIN_QUEUE'; skill?: AiSkill }
+  | { type: 'JOIN_QUEUE'; gameId: GameId }
   | { type: 'JOIN_ROOM'; roomId: string; playerSide?: PlayerSide }
-  | { type: 'START_AI_GAME'; skill: AiSkill }
+  | { type: 'START_AI_GAME'; gameId: GameId; skill: AiSkill; animDelay?: number }
   | { type: 'MAKE_MOVE'; move: Move }
   | { type: 'LEAVE_ROOM' }
   | { type: 'REMATCH' };
 
 export type ServerMessage =
   | { type: 'ROOM_JOINED'; roomId: string; side: PlayerSide }
-  | { type: 'GAME_START'; state: GameState; side: PlayerSide; mode: GameMode; skill?: AiSkill }
+  | { type: 'GAME_START'; state: GameState; side: PlayerSide; mode: GameMode; skill?: AiSkill; opponentUsername?: string }
   | { type: 'STATE_UPDATE'; state: GameState; lastMove: Move }
   | { type: 'GAME_OVER'; state: GameState; lastMove?: Move }
   | { type: 'OPPONENT_DISCONNECTED' }
   | { type: 'WAITING_FOR_OPPONENT' }
-  | { type: 'ERROR'; code: string; message: string };
+  | { type: 'ERROR'; code: string; message: string }
+  | { type: 'AUTH_ERROR'; message: string };
