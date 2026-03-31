@@ -1,8 +1,13 @@
+import fs from 'fs';
+import path from 'path';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema.js';
 
 export function createDb(dbPath: string) {
+  if (dbPath !== ':memory:') {
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  }
   const sqlite = new Database(dbPath);
 
   // WAL mode for better concurrent read performance
