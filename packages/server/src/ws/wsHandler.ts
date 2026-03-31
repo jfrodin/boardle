@@ -19,7 +19,7 @@ const wsUserMap = new Map<WebSocket, AuthUser | null>();
 export function registerWsRoutes(fastify: FastifyInstance): void {
   fastify.get('/ws', { websocket: true }, (socket, req) => {
     // Extract and verify JWT from query param ?token=...
-    const token = (req.query as Record<string, string | undefined>).token;
+    const token = (req.query as Record<string, string | undefined> | undefined)?.token;
     let user: AuthUser | null = null;
 
     if (token) {
