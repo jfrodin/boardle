@@ -47,6 +47,8 @@ export function buildApp(opts: AppOptions) {
 
   // CORS
   fastify.addHook('onRequest', async (_req, reply) => {
+    // Skip CORS for WebSocket upgrade requests
+    if (_req.url.startsWith('/ws')) return;
     reply.header('Access-Control-Allow-Origin', opts.corsOrigin);
     reply.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
