@@ -45,8 +45,9 @@ export function buildApp(opts: AppOptions) {
   // WebSocket support
   fastify.register(fastifyWebsocket);
 
-  // CORS
+  // CORS — skip for WebSocket upgrade requests
   fastify.addHook('onRequest', async (_req, reply) => {
+    if (_req.url.startsWith('/ws')) return;
     reply.header('Access-Control-Allow-Origin', opts.corsOrigin);
     reply.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
