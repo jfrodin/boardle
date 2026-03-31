@@ -1,6 +1,6 @@
 import { buildApp } from './app.js';
 
-const PORT = Number(process.env.PORT ?? 3001);
+const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? '0.0.0.0';
 const DB_PATH = process.env.DB_PATH ?? './data/app.db';
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-this-in-production-min-32-chars!!';
