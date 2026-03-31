@@ -96,7 +96,7 @@ export function PortalHome(): React.ReactElement {
         </div>
 
         <footer className="portal-footer">
-          <span className="copyright">© {new Date().getFullYear()} Boardle</span>
+          <span className="copyright">© {new Date().getFullYear()} Boardle &mdash; a Fredagsprinsen project</span>
         </footer>
       </div>
     </div>
