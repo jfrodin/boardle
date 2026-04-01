@@ -46,7 +46,7 @@ const GAMES: GameCard[] = [
     description: 'The classic card patience game. Clear the tableau, one move at a time.',
     players: '1 player',
     emoji: '🃏',
-    available: false,
+    available: true,
     path: '/solitaire',
   },
   {

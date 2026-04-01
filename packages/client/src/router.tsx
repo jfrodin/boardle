@@ -17,6 +17,8 @@ import { GameScreen as KalahaGame } from './games/kalaha/GameScreen.tsx';
 import { useServerMessages } from './games/kalaha/hooks/useServerMessages.ts';
 import { HomeScreen as CheckersHome } from './games/checkers/HomeScreen.tsx';
 import { GameScreen as CheckersGame } from './games/checkers/GameScreen.tsx';
+import { HomeScreen as SolitaireHome } from './games/solitaire/HomeScreen.tsx';
+import { GameScreen as SolitaireGame } from './games/solitaire/GameScreen.tsx';
 import { useCheckersServerMessages } from './games/checkers/hooks/useServerMessages.ts';
 import { useAuthStore } from './shared/store/authStore.ts';
 import { useEffect } from 'react';
@@ -116,6 +118,18 @@ const checkersGameRoute = createRoute({
   component: CheckersGame,
 });
 
+const solitaireRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/solitaire',
+  component: SolitaireHome,
+});
+
+const solitaireGameRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/solitaire/game',
+  component: SolitaireGame,
+});
+
 // ---- Router ----
 
 const routeTree = rootRoute.addChildren([
@@ -130,6 +144,8 @@ const routeTree = rootRoute.addChildren([
   checkersRoute,
   checkersLobbyRoute,
   checkersGameRoute,
+  solitaireRoute,
+  solitaireGameRoute,
 ]);
 
 export const router = createRouter({ routeTree });
