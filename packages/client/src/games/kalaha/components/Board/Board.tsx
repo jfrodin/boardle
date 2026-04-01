@@ -14,7 +14,7 @@ export function Board(): React.ReactElement {
   // Drive the animation queue — this hook advances frames on a timer
   useAnimationQueue();
 
-  const { displayedState, playerSide, animationQueue, activeDrop } = useGameStore();
+  const { displayedState, playerSide, animationQueue, activeDrop, lastMove } = useGameStore();
 
   if (!displayedState || !playerSide) return <div className="board-loading">Loading...</div>;
 
@@ -39,6 +39,12 @@ export function Board(): React.ReactElement {
   const isNorthSouth = playerSide === 'SOUTH';
 
   // Compute which cell has the active drop highlight
+  function isLastMove(side: 0 | 1, pit: number): boolean {
+    if (!lastMove || animationQueue.length > 0) return false;
+    const moveSideIndex: 0 | 1 = lastMove.side === 'SOUTH' ? 0 : 1;
+    return moveSideIndex === side && lastMove.pitIndex === pit;
+  }
+
   function isPitActive(side: 0 | 1, pit: number): boolean {
     if (!activeDrop) return false;
     return activeDrop.position.side === side && activeDrop.position.pit === pit;
@@ -84,9 +90,10 @@ export function Board(): React.ReactElement {
                   isPlayable={isPlayable}
                   isOpponent={isNorthSouth}
                   isActive={active}
+                  isLastMove={isLastMove(1, actualPitIndex)}
                   dropKind={active ? activeDrop?.kind : undefined}
                   onClick={isPlayable ? () => handlePitClick(actualPitIndex) : undefined}
-                  label={`Opponent pit ${actualPitIndex + 1}`}
+                  label={isNorthSouth ? `Opponent pit ${actualPitIndex + 1}` : `Your pit ${actualPitIndex + 1}`}
                 />
               );
             })}
@@ -104,9 +111,10 @@ export function Board(): React.ReactElement {
                   isPlayable={isPlayable}
                   isOpponent={!isNorthSouth}
                   isActive={active}
+                  isLastMove={isLastMove(0, pitIndex)}
                   dropKind={active ? activeDrop?.kind : undefined}
                   onClick={isPlayable ? () => handlePitClick(pitIndex) : undefined}
-                  label={`Your pit ${pitIndex + 1}`}
+                  label={isNorthSouth ? `Your pit ${pitIndex + 1}` : `Opponent pit ${pitIndex + 1}`}
                 />
               );
             })}

@@ -542,15 +542,13 @@ button { cursor: pointer; border: none; font: inherit; }
   height: 100%;
 }
 .pit-count {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: var(--text);
+  color: var(--text-muted);
   line-height: 1;
   position: absolute;
   bottom: 6px;
   right: 8px;
-  font-size: 0.75rem;
-  color: var(--text-muted);
 }
 
 /* === Stones === */
@@ -651,9 +649,18 @@ button { cursor: pointer; border: none; font: inherit; }
   color: #a5d6a7;
   animation: fadeOut 3s ease forwards;
 }
+.status-banner--timeout {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fde68a;
+  animation: fadeOut 4s ease forwards;
+}
 @keyframes fadeOut {
   0%, 60% { opacity: 1; }
   100% { opacity: 0; }
+}
+.pit--last-move {
+  box-shadow: 0 0 0 2px var(--accent-light);
 }
 .board-loading { color: var(--text-muted); }
 

@@ -20,6 +20,8 @@ interface GameStore {
   skill: AiSkill | null;
   roomId: string | null;
   opponentUsername: string | null;
+  lastMove: Move | null;
+  rematchRequested: boolean;
 
   activeDrop: ActiveDrop | null;
   animationQueue: QueuedAnimation[];
@@ -29,6 +31,7 @@ interface GameStore {
   enqueueAnimation: (move: Move, finalState: GameState) => void;
   setDisplayedBoard: (board: Board, drop: ActiveDrop | null) => void;
   dequeueAnimation: () => void;
+  setRematchRequested: (v: boolean) => void;
   reset: () => void;
 }
 
@@ -39,6 +42,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   skill: null,
   roomId: null,
   opponentUsername: null,
+  lastMove: null,
+  rematchRequested: false,
   activeDrop: null,
   animationQueue: [],
 
@@ -49,6 +54,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       mode,
       skill: skill ?? null,
       opponentUsername: opponentUsername ?? null,
+      lastMove: null,
+      rematchRequested: false,
       animationQueue: [],
       activeDrop: null,
     }),
@@ -80,10 +87,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return {
         animationQueue: rest,
         displayedState: done.finalState,
+        lastMove: done.move,
         activeDrop: null,
       };
     });
   },
+
+  setRematchRequested: (v) => set({ rematchRequested: v }),
 
   reset: () =>
     set({
@@ -93,6 +103,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       skill: null,
       roomId: null,
       opponentUsername: null,
+      lastMove: null,
+      rematchRequested: false,
       activeDrop: null,
       animationQueue: [],
     }),

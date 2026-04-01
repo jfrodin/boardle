@@ -1,5 +1,5 @@
 import type { WebSocket } from '@fastify/websocket';
-import type { AiSkill, PlayerSide } from '@boardly/shared';
+import type { AiSkill } from '@boardly/shared';
 import { GameRoom } from './GameRoom.js';
 
 interface QueueEntry {
@@ -21,6 +21,7 @@ export class RoomManager {
   ): GameRoom {
     const room = new GameRoom('ai', skill, animDelay);
     room.addPlayer(ws, playerUsername ?? 'Player', aiUsername ?? `AI (${skill})`);
+    room.setOnEmpty(() => this.rooms.delete(room.id));
     this.rooms.set(room.id, room);
     return room;
   }
@@ -32,6 +33,7 @@ export class RoomManager {
         const room = new GameRoom('online');
         room.addPlayer(waiting.ws, waiting.username, user.username);
         room.addPlayer(ws, user.username, waiting.username);
+        room.setOnEmpty(() => this.rooms.delete(room.id));
         waiting.resolve(room);
         this.rooms.set(room.id, room);
         resolve(room);
@@ -56,9 +58,7 @@ export class RoomManager {
   handleDisconnect(ws: WebSocket): void {
     this.removeFromQueue(ws);
     for (const room of this.rooms.values()) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const players: any[] = (room as any).players;
-      if (players.some((p: any) => p.ws === ws)) {
+      if (room.hasPlayer(ws)) {
         room.handleDisconnect(ws);
       }
     }

@@ -56,5 +56,7 @@ export type ServerMessage =
   | { type: 'GAME_OVER'; state: GameState; lastMove?: Move }
   | { type: 'OPPONENT_DISCONNECTED' }
   | { type: 'WAITING_FOR_OPPONENT' }
+  | { type: 'TURN_TIMEOUT'; side: PlayerSide }
+  | { type: 'REMATCH_REQUESTED' }
   | { type: 'ERROR'; code: string; message: string }
   | { type: 'AUTH_ERROR'; message: string };
