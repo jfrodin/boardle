@@ -28,14 +28,18 @@ class WsService {
     if (this.ws && this.ws.readyState <= WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const token = useAuthStore.getState().token;
-    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
-    const url = `${protocol}//${window.location.host}/ws${tokenParam}`;
+    const url = `${protocol}//${window.location.host}/ws`;
 
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
       console.log('[WS] connected');
+
+      // Send auth token as first message — never in URL to avoid log leakage
+      const token = useAuthStore.getState().token;
+      if (token) {
+        this.ws!.send(JSON.stringify({ type: 'AUTH', token }));
+      }
 
       const stored = useGameStore.getState();
       const roomId = stored.roomId ?? loadSession('kalahaRoomId');
