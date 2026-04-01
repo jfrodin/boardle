@@ -39,7 +39,7 @@ export interface Move {
 // ---- WebSocket protocol ----
 
 /** Game identifier — used to route messages when multiple games share one server */
-export type GameId = 'kalaha';
+export type GameId = 'kalaha' | 'checkers';
 
 export type ClientMessage =
   | { type: 'AUTH'; token: string }
@@ -48,7 +48,8 @@ export type ClientMessage =
   | { type: 'START_AI_GAME'; gameId: GameId; skill: AiSkill; animDelay?: number }
   | { type: 'MAKE_MOVE'; move: Move }
   | { type: 'LEAVE_ROOM' }
-  | { type: 'REMATCH' };
+  | { type: 'REMATCH' }
+  | { type: 'CHECKERS_MOVE'; move: import('./checkersTypes.js').CheckersMove };
 
 export type ServerMessage =
   | { type: 'AUTH_OK'; username: string }
@@ -61,4 +62,7 @@ export type ServerMessage =
   | { type: 'TURN_TIMEOUT'; side: PlayerSide }
   | { type: 'REMATCH_REQUESTED' }
   | { type: 'ERROR'; code: string; message: string }
-  | { type: 'AUTH_ERROR'; message: string };
+  | { type: 'AUTH_ERROR'; message: string }
+  | { type: 'CHECKERS_GAME_START'; state: import('./checkersTypes.js').CheckersGameState; side: PlayerSide; mode: GameMode; skill?: AiSkill; opponentUsername?: string }
+  | { type: 'CHECKERS_STATE_UPDATE'; state: import('./checkersTypes.js').CheckersGameState; lastMove: import('./checkersTypes.js').CheckersMove }
+  | { type: 'CHECKERS_GAME_OVER'; state: import('./checkersTypes.js').CheckersGameState; lastMove?: import('./checkersTypes.js').CheckersMove };

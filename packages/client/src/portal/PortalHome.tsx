@@ -64,7 +64,7 @@ const GAMES: GameCard[] = [
     description: 'Jump over your opponent\'s pieces and king your way to victory.',
     players: '1–2 players',
     emoji: '⚫',
-    available: false,
+    available: true,
     path: '/checkers',
   },
 ];
@@ -101,6 +101,7 @@ export function PortalHome(): React.ReactElement {
           {GAMES.map(game => (
             <div
               key={game.id}
+              data-game={game.id}
               className={`game-card${game.available ? ' game-card--available' : ' game-card--soon'}`}
               onClick={() => game.available && void navigate({ to: game.path as '/' })}
               role={game.available ? 'button' : undefined}
@@ -124,6 +125,12 @@ export function PortalHome(): React.ReactElement {
 
         <footer className="portal-footer">
           <span className="copyright">© {new Date().getFullYear()} Boardle.se &mdash; made with ☕ by Fredagsprinsen</span>
+          <a
+            href="mailto:bugs.boardle@gmail.com?subject=Bug%20report%20%E2%80%94%20Boardle&body=What%20happened%3A%0A%0AWhat%20I%20expected%3A%0A%0ABrowser%2FDevice%3A"
+            className="bug-report-link"
+          >
+            Report a bug
+          </a>
         </footer>
       </div>
     </div>

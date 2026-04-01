@@ -1,16 +1,20 @@
 import type { WebSocket } from '@fastify/websocket';
 import type { AiSkill } from '@boardly/shared';
 import { GameRoom } from './GameRoom.js';
+import { CheckersRoom } from './CheckersRoom.js';
 
-interface QueueEntry {
+type AnyRoom = GameRoom | CheckersRoom;
+
+interface QueueEntry<T> {
   ws: WebSocket;
   username: string;
-  resolve: (room: GameRoom) => void;
+  resolve: (room: T) => void;
 }
 
 export class RoomManager {
-  private rooms = new Map<string, GameRoom>();
-  private matchQueue: QueueEntry[] = [];
+  private rooms = new Map<string, AnyRoom>();
+  private kalahaQueue: QueueEntry<GameRoom>[] = [];
+  private checkersQueue: QueueEntry<CheckersRoom>[] = [];
 
   createAiRoom(
     ws: WebSocket,
@@ -28,27 +32,65 @@ export class RoomManager {
 
   joinQueue(ws: WebSocket, user: { userId: string; username: string }): Promise<GameRoom> {
     return new Promise(resolve => {
-      if (this.matchQueue.length > 0) {
-        const waiting = this.matchQueue.shift()!;
+      if (this.kalahaQueue.length > 0) {
+        const waiting = this.kalahaQueue.shift()!;
         const room = new GameRoom('online');
         room.addPlayer(waiting.ws, waiting.username, user.username);
         room.addPlayer(ws, user.username, waiting.username);
         room.setOnEmpty(() => this.rooms.delete(room.id));
-        waiting.resolve(room);
         this.rooms.set(room.id, room);
+        room.start(); // start exactly once, before resolving either promise
+        waiting.resolve(room);
         resolve(room);
       } else {
-        this.matchQueue.push({ ws, username: user.username, resolve });
+        this.kalahaQueue.push({ ws, username: user.username, resolve });
+      }
+    });
+  }
+
+  createCheckersAiRoom(
+    ws: WebSocket,
+    skill: AiSkill,
+    playerUsername?: string,
+    aiUsername?: string,
+  ): CheckersRoom {
+    const room = new CheckersRoom('ai', skill);
+    room.addPlayer(ws, playerUsername ?? 'Player', aiUsername ?? `AI (${skill})`);
+    room.setOnEmpty(() => this.rooms.delete(room.id));
+    this.rooms.set(room.id, room);
+    return room;
+  }
+
+  joinCheckersQueue(ws: WebSocket, user: { userId: string; username: string }): Promise<CheckersRoom> {
+    return new Promise(resolve => {
+      if (this.checkersQueue.length > 0) {
+        const waiting = this.checkersQueue.shift()!;
+        const room = new CheckersRoom('online');
+        room.addPlayer(waiting.ws, waiting.username, user.username);
+        room.addPlayer(ws, user.username, waiting.username);
+        room.setOnEmpty(() => this.rooms.delete(room.id));
+        this.rooms.set(room.id, room);
+        room.start(); // start exactly once, before resolving either promise
+        waiting.resolve(room);
+        resolve(room);
+      } else {
+        this.checkersQueue.push({ ws, username: user.username, resolve });
       }
     });
   }
 
   removeFromQueue(ws: WebSocket): void {
-    this.matchQueue = this.matchQueue.filter(e => e.ws !== ws);
+    this.kalahaQueue = this.kalahaQueue.filter(e => e.ws !== ws);
+    this.checkersQueue = this.checkersQueue.filter(e => e.ws !== ws);
   }
 
-  getRoom(id: string): GameRoom | undefined {
+  getRoom(id: string): AnyRoom | undefined {
     return this.rooms.get(id);
+  }
+
+  getCheckersRoom(id: string): CheckersRoom | undefined {
+    const room = this.rooms.get(id);
+    return room instanceof CheckersRoom ? room : undefined;
   }
 
   deleteRoom(id: string): void {

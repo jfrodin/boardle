@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from '@fastify/websocket';
 import type { AiSkill, ClientMessage, ServerMessage } from '@boardly/shared';
 import { RoomManager } from '../game/RoomManager.js';
+import { CheckersRoom } from '../game/CheckersRoom.js';
 
 interface AuthUser {
   userId: string;
@@ -93,18 +94,24 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
     }
 
     case 'START_AI_GAME': {
-      // Validate skill
       if (!VALID_SKILLS.has(msg.skill)) {
         sendError(ws, 'INVALID_SKILL', 'Invalid skill level');
         return;
       }
-      // Clamp animDelay
-      const animDelay = Math.min(MAX_ANIM_DELAY, Math.max(MIN_ANIM_DELAY, msg.animDelay ?? 400));
-      const opponentLabel = `AI (${msg.skill.charAt(0).toUpperCase() + msg.skill.slice(1)})`;
-      const room = manager.createAiRoom(ws, msg.skill, animDelay, user?.username, opponentLabel);
-      wsRoomMap.set(ws, room.id);
-      send(ws, { type: 'ROOM_JOINED', roomId: room.id, side: 'SOUTH' });
-      room.start();
+      if (msg.gameId === 'checkers') {
+        const opponentLabel = `AI (${msg.skill.charAt(0).toUpperCase() + msg.skill.slice(1)})`;
+        const room = manager.createCheckersAiRoom(ws, msg.skill, user?.username, opponentLabel);
+        wsRoomMap.set(ws, room.id);
+        send(ws, { type: 'ROOM_JOINED', roomId: room.id, side: 'SOUTH' });
+        room.start();
+      } else {
+        const animDelay = Math.min(MAX_ANIM_DELAY, Math.max(MIN_ANIM_DELAY, msg.animDelay ?? 400));
+        const opponentLabel = `AI (${msg.skill.charAt(0).toUpperCase() + msg.skill.slice(1)})`;
+        const room = manager.createAiRoom(ws, msg.skill, animDelay, user?.username, opponentLabel);
+        wsRoomMap.set(ws, room.id);
+        send(ws, { type: 'ROOM_JOINED', roomId: room.id, side: 'SOUTH' });
+        room.start();
+      }
       break;
     }
 
@@ -114,12 +121,15 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
         return;
       }
       send(ws, { type: 'WAITING_FOR_OPPONENT' });
-      manager.joinQueue(ws, user).then(room => {
-        wsRoomMap.set(ws, room.id);
-        if (room.isFull) {
-          room.start();
-        }
-      });
+      if (msg.gameId === 'checkers') {
+        manager.joinCheckersQueue(ws, user).then(room => {
+          wsRoomMap.set(ws, room.id);
+        });
+      } else {
+        manager.joinQueue(ws, user).then(room => {
+          wsRoomMap.set(ws, room.id);
+        });
+      }
       break;
     }
 
@@ -141,6 +151,7 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
     }
 
     case 'MAKE_MOVE':
+    case 'CHECKERS_MOVE':
     case 'LEAVE_ROOM':
     case 'REMATCH': {
       const roomId = wsRoomMap.get(ws);
@@ -151,6 +162,14 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
       const room = manager.getRoom(roomId);
       if (!room) {
         sendError(ws, 'ROOM_NOT_FOUND', 'Room not found');
+        return;
+      }
+      if (msg.type === 'MAKE_MOVE' && room instanceof CheckersRoom) {
+        sendError(ws, 'WRONG_GAME', 'This room is for Checkers');
+        return;
+      }
+      if (msg.type === 'CHECKERS_MOVE' && !(room instanceof CheckersRoom)) {
+        sendError(ws, 'WRONG_GAME', 'This room is not a Checkers room');
         return;
       }
       room.handleMessage(ws, msg);

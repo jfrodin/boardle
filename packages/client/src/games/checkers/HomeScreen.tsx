@@ -2,20 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
 import type { AiSkill } from '@boardly/shared';
 import { wsService } from '../../shared/services/wsService.ts';
-import { useUiStore } from '../../shared/store/uiStore.ts';
 import { useAuthStore } from '../../shared/store/authStore.ts';
-
-const ANIM_DELAY: Record<string, number> = { slow: 800, normal: 400, fast: 150 };
 
 export function HomeScreen(): React.ReactElement {
   const navigate = useNavigate();
   const [skill, setSkill] = useState<AiSkill>('medium');
-  const { animSpeed } = useUiStore();
   const { user } = useAuthStore();
 
   function startAiGame(): void {
     wsService.connect();
-    wsService.send({ type: 'START_AI_GAME', gameId: 'kalaha', skill, animDelay: ANIM_DELAY[animSpeed] });
+    wsService.send({ type: 'START_AI_GAME', gameId: 'checkers', skill });
   }
 
   function joinOnline(): void {
@@ -24,15 +20,15 @@ export function HomeScreen(): React.ReactElement {
       return;
     }
     wsService.connect();
-    wsService.send({ type: 'JOIN_QUEUE', gameId: 'kalaha' });
+    wsService.send({ type: 'JOIN_QUEUE', gameId: 'checkers' });
   }
 
   return (
-    <div className="screen home-screen theme-kalaha">
+    <div className="screen home-screen theme-checkers">
       <div className="home-content">
         <Link to="/" className="back-to-portal-btn">← All Games</Link>
-        <h1 className="home-title">Mancala</h1>
-        <p className="home-subtitle">Kalaha — the ancient stone-and-seeds game</p>
+        <h1 className="home-title">Checkers</h1>
+        <p className="home-subtitle">English Draughts — jump, capture, and king your pieces</p>
 
         <section className="mode-section">
           <h2>vs Computer</h2>

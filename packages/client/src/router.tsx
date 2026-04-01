@@ -15,6 +15,9 @@ import { HomeScreen as KalahaHome } from './games/kalaha/HomeScreen.tsx';
 import { LobbyScreen } from './shared/components/LobbyScreen.tsx';
 import { GameScreen as KalahaGame } from './games/kalaha/GameScreen.tsx';
 import { useServerMessages } from './games/kalaha/hooks/useServerMessages.ts';
+import { HomeScreen as CheckersHome } from './games/checkers/HomeScreen.tsx';
+import { GameScreen as CheckersGame } from './games/checkers/GameScreen.tsx';
+import { useCheckersServerMessages } from './games/checkers/hooks/useServerMessages.ts';
 import { useAuthStore } from './shared/store/authStore.ts';
 import { useEffect } from 'react';
 
@@ -26,8 +29,9 @@ function RootLayout(): React.ReactElement {
   const init = useAuthStore(s => s.init);
   useEffect(() => { init(); }, [init]);
 
-  // WS message handler must live here so it stays mounted across all routes
+  // WS message handlers must live here so they stay mounted across all routes
   useServerMessages();
+  useCheckersServerMessages();
 
   return (
     <div className="app">
@@ -94,6 +98,24 @@ const kalahaGameRoute = createRoute({
   component: KalahaGame,
 });
 
+const checkersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/checkers',
+  component: CheckersHome,
+});
+
+const checkersLobbyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/checkers/lobby',
+  component: LobbyScreen,
+});
+
+const checkersGameRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/checkers/game',
+  component: CheckersGame,
+});
+
 // ---- Router ----
 
 const routeTree = rootRoute.addChildren([
@@ -105,6 +127,9 @@ const routeTree = rootRoute.addChildren([
   kalahaRoute,
   kalahaLobbyRoute,
   kalahaGameRoute,
+  checkersRoute,
+  checkersLobbyRoute,
+  checkersGameRoute,
 ]);
 
 export const router = createRouter({ routeTree });

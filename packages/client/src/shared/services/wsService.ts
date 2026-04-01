@@ -41,9 +41,14 @@ class WsService {
         this.ws!.send(JSON.stringify({ type: 'AUTH', token }));
       }
 
-      const stored = useGameStore.getState();
-      const roomId = stored.roomId ?? loadSession('kalahaRoomId');
-      const playerSide = stored.playerSide ?? loadSession('kalahaSide');
+      // Try to restore an active session (Kalaha or Checkers)
+      const kalahaStored = useGameStore.getState();
+      const roomId =
+        kalahaStored.roomId ?? loadSession('kalahaRoomId') ??
+        loadSession('checkersRoomId');
+      const playerSide =
+        kalahaStored.playerSide ?? loadSession('kalahaSide') ??
+        loadSession('checkersSide');
 
       if (isValidRoomId(roomId) && isValidSide(playerSide)) {
         this.ws!.send(JSON.stringify({ type: 'JOIN_ROOM', roomId, playerSide }));
