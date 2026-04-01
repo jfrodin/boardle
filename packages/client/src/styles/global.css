@@ -32,9 +32,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Prevent iOS text size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
 }
 #root { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-button { cursor: pointer; border: none; font: inherit; }
+button { cursor: pointer; border: none; font: inherit; touch-action: manipulation; }
+a { touch-action: manipulation; }
+/* Remove tap highlight on mobile */
+* { -webkit-tap-highlight-color: transparent; }
 
 /* === App === */
 .app { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
@@ -50,6 +55,7 @@ button { cursor: pointer; border: none; font: inherit; }
   width: 100%;
   max-width: 760px;
   padding: 2.5rem 1.5rem;
+  padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
 }
 .portal-header { text-align: center; }
 .portal-title {
@@ -300,6 +306,7 @@ button { cursor: pointer; border: none; font: inherit; }
   font-weight: 600;
   transition: var(--transition);
   box-shadow: 0 2px 8px var(--accent-glow);
+  min-height: 44px;
 }
 .primary-btn:hover { background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-glow); }
 .online-btn { background: #0f766e; }
@@ -509,7 +516,7 @@ button { cursor: pointer; border: none; font: inherit; }
   transition: var(--transition);
 }
 .back-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
-.mode-label { color: var(--text-muted); font-size: 0.85rem; }
+.mode-label { color: var(--text-muted); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40vw; }
 .speed-selector { display: flex; gap: 0.25rem; }
 .speed-btn {
   width: 32px; height: 32px;
@@ -796,31 +803,57 @@ button { cursor: pointer; border: none; font: inherit; }
 
 /* === Responsive — Mobile === */
 @media (max-width: 520px) {
-  .game-screen { padding: 0.5rem; overflow-y: auto; align-items: flex-start; }
+  /* Portal */
+  .portal-content { padding: 1.5rem 1rem; gap: 1.5rem; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+  .portal-title { font-size: 2.4rem; }
+  .portal-subtitle { font-size: 0.82rem; }
+  .game-grid { grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
+  .game-card { padding: 1rem 0.85rem; gap: 0.5rem; }
+  .game-card-emoji { font-size: 2rem; }
+  .game-card-title { font-size: 0.95rem; }
+  .game-card-desc { font-size: 0.72rem; }
+  .game-card-meta { font-size: 0.68rem; }
+  .game-card-badge { font-size: 0.6rem; padding: 0.15rem 0.4rem; }
+
+  /* Game screen — center content, scroll from top */
+  .game-screen {
+    padding: 0.5rem 0.5rem;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    align-items: center;
+    justify-content: flex-start;
+  }
   .game-header { margin-bottom: 0.5rem; }
-  .back-btn { font-size: 0.8rem; padding: 0.3rem 0.6rem; }
-  .mode-label { font-size: 0.75rem; }
+  .back-btn { font-size: 0.8rem; padding: 0.3rem 0.6rem; min-height: 36px; }
+  .mode-label { font-size: 0.72rem; }
   .speed-btn { width: 28px; height: 28px; font-size: 0.85rem; }
 
-  /* Board shrinks to fill the viewport width */
+  /* Buttons — full width for easier tapping */
+  .mode-section .primary-btn { width: 100%; }
+  .mode-section .online-btn { width: 100%; }
+
+  /* Kalaha board */
   .board { padding: 0.5rem 0.4rem; gap: 0.3rem; border-radius: 16px; }
   .pits-row { gap: 0.3rem; }
   .pits-column { gap: 0.3rem; }
-
-  /* Pits: drop min-width so the grid can size them freely */
   .pit { min-width: 0; min-height: 0; aspect-ratio: 1; }
   .stone { width: 6px; height: 6px; }
   .pit-count { font-size: 0.65rem; bottom: 3px; right: 4px; }
-
   .store { width: clamp(36px, 9vw, 52px); padding: 0.4rem 0.25rem; }
   .store-count { font-size: 1.2rem; }
   .store-label { font-size: 0.5rem; }
 
+  /* Home + UI */
   .turn-indicator { font-size: 0.8rem; padding: 0.4rem 0.8rem; margin-bottom: 0.5rem; }
   .home-title { font-size: 2.8rem; }
   .home-content { gap: 1.25rem; padding: 1.25rem; }
   .modal { padding: 1.75rem 1.25rem; }
   .score-value { font-size: 2rem; }
+  .status-banner { font-size: 0.8rem; padding: 0.4rem 0.75rem; }
+
+  /* Auth screens */
+  .auth-content { padding: 1.5rem 1rem; }
+  .auth-title { font-size: 1.6rem; }
 }
 
 /* Hide tip jar on mobile when in-game to avoid covering the board */
@@ -831,7 +864,13 @@ button { cursor: pointer; border: none; font: inherit; }
 
 /* === Responsive — Landscape phone === */
 @media (max-height: 500px) and (orientation: landscape) {
-  .game-screen { padding: 0.25rem 0.75rem; justify-content: flex-start; }
+  .game-screen {
+    padding: 0.25rem 0.75rem;
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+    justify-content: flex-start;
+    align-items: center;
+    overflow-y: auto;
+  }
   .game-header { margin-bottom: 0.25rem; }
   .turn-indicator { margin-bottom: 0.25rem; padding: 0.25rem 0.75rem; font-size: 0.75rem; }
   .board { padding: 0.4rem; gap: 0.25rem; }
@@ -957,11 +996,14 @@ button { cursor: pointer; border: none; font: inherit; }
     height: min(96vw, 400px);
   }
   .checkers-dot { width: 30%; height: 30%; }
+  /* Ensure piece tap targets are large enough */
+  .checkers-piece { width: 78%; height: 78%; }
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
   .checkers-board {
-    width: min(70vh, 400px);
-    height: min(70vh, 400px);
+    width: min(72vh, 380px);
+    height: min(72vh, 380px);
   }
+  .checkers-game-wrapper { gap: 0.4rem; }
 }
