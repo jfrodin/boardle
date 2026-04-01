@@ -10,12 +10,10 @@ interface GameOverModalProps {
 }
 
 export function GameOverModal({ state, playerSide }: GameOverModalProps): React.ReactElement {
-  const { reset, opponentUsername, mode, rematchRequested } = useGameStore(s => ({
-    reset: s.reset,
-    opponentUsername: s.opponentUsername,
-    mode: s.mode,
-    rematchRequested: s.rematchRequested,
-  }));
+  const reset = useGameStore(s => s.reset);
+  const opponentUsername = useGameStore(s => s.opponentUsername);
+  const mode = useGameStore(s => s.mode);
+  const rematchRequested = useGameStore(s => s.rematchRequested);
 
   const { winner, board } = state;
   const si = playerSide === 'SOUTH' ? 0 : 1;
