@@ -34,12 +34,16 @@ export function buildApp(opts: AppOptions) {
     timeWindow: '1 minute',
   });
 
-  fastify.register(fastifyWebsocket);
-
   fastify.get('/health', async () => ({ status: 'ok' }));
 
   registerAuthRoutes(fastify, db);
-  registerWsRoutes(fastify);
+
+  // Register WebSocket plugin and routes inside a scoped plugin
+  // so the decorator is guaranteed to be available when routes are added
+  fastify.register(async (instance) => {
+    await instance.register(fastifyWebsocket);
+    registerWsRoutes(instance);
+  });
 
   if (process.env.NODE_ENV === 'production') {
     const clientDist = path.resolve(__dirname, '../../client/dist');
