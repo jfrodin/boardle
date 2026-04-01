@@ -31,8 +31,8 @@ export function HomeScreen(): React.ReactElement {
     <div className="screen home-screen">
       <div className="home-content">
         <Link to="/" className="back-to-portal-btn">← All Games</Link>
-        <h1 className="home-title">Kalaha</h1>
-        <p className="home-subtitle">The ancient stone-and-seeds game</p>
+        <h1 className="home-title">Mancala</h1>
+        <p className="home-subtitle">Kalaha — the ancient stone-and-seeds game</p>
 
         <section className="mode-section">
           <h2>vs Computer</h2>
