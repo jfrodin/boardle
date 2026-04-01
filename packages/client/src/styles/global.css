@@ -822,13 +822,13 @@ a { touch-action: manipulation; }
   .game-card-meta { font-size: 0.68rem; }
   .game-card-badge { font-size: 0.6rem; padding: 0.15rem 0.4rem; }
 
-  /* Game screen — center content, scroll from top */
+  /* Game screen — scrollable but centered when content fits */
   .game-screen {
     padding: 0.5rem 0.5rem;
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
     overflow-y: auto;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
   }
   .game-header { margin-bottom: 0.5rem; }
   .back-btn { font-size: 0.8rem; padding: 0.3rem 0.6rem; min-height: 36px; }
@@ -874,7 +874,7 @@ a { touch-action: manipulation; }
   .game-screen {
     padding: 0.25rem 0.75rem;
     padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     overflow-y: auto;
   }
