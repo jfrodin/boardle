@@ -14,12 +14,12 @@ import { getAiMove } from '../games/kalaha/AiPlayer.js';
 
 const RECONNECT_GRACE_MS = 30_000;
 const DEFAULT_AI_DELAY_MS = 400;
+const TURN_TIMEOUT_MS = 60_000; // 1 minute per turn (online only)
 
 interface Player {
   ws: WebSocket | null;
   side: PlayerSide;
   username: string;
-  /** Username of the opponent, sent in GAME_START */
   opponentUsername: string;
   disconnectTimer?: ReturnType<typeof setTimeout>;
 }
@@ -33,6 +33,9 @@ export class GameRoom {
   private players: Player[] = [];
   private closed = false;
   private aiDelayMs: number;
+  private turnTimer?: ReturnType<typeof setTimeout>;
+  private rematchVotes = new Set<PlayerSide>();
+  private onEmpty?: () => void;
 
   constructor(mode: GameMode, skill?: AiSkill, aiDelayMs?: number) {
     this.id = randomUUID();
@@ -40,6 +43,11 @@ export class GameRoom {
     this.skill = skill;
     this.aiDelayMs = aiDelayMs ?? DEFAULT_AI_DELAY_MS;
     this.state = createInitialState();
+  }
+
+  /** Called by RoomManager so the room can remove itself when no longer needed */
+  setOnEmpty(cb: () => void): void {
+    this.onEmpty = cb;
   }
 
   get isFull(): boolean {
@@ -50,11 +58,10 @@ export class GameRoom {
     return this.players.filter(p => p.ws !== null).length;
   }
 
-  /**
-   * Add a player to the room.
-   * @param username - display name for this player
-   * @param opponentUsername - display name shown to this player for their opponent
-   */
+  hasPlayer(ws: WebSocket): boolean {
+    return this.players.some(p => p.ws === ws);
+  }
+
   addPlayer(ws: WebSocket, username: string, opponentUsername: string): PlayerSide {
     if (this.isFull) throw new Error('Room is full');
     const side: PlayerSide = this.players.length === 0 ? 'SOUTH' : 'NORTH';
@@ -64,6 +71,7 @@ export class GameRoom {
 
   start(): void {
     this.state = createInitialState();
+    this.rematchVotes.clear();
     for (const player of this.players) {
       if (player.ws) {
         this.send(player.ws, {
@@ -76,6 +84,9 @@ export class GameRoom {
         });
       }
     }
+    if (this.mode === 'online') {
+      this.startTurnTimer();
+    }
   }
 
   handleMessage(ws: WebSocket, msg: ClientMessage): void {
@@ -87,7 +98,7 @@ export class GameRoom {
     if (msg.type === 'MAKE_MOVE') {
       this.handleMove(player, msg.move);
     } else if (msg.type === 'REMATCH') {
-      this.handleRematch();
+      this.handleRematch(player);
     } else if (msg.type === 'LEAVE_ROOM') {
       this.handleLeave(ws);
     }
@@ -96,26 +107,20 @@ export class GameRoom {
   private handleMove(player: Player, move: Move): void {
     if (this.state.status !== 'ACTIVE') return;
     if (player.side !== this.state.currentTurn) {
-      this.send(player.ws!, {
-        type: 'ERROR',
-        code: 'NOT_YOUR_TURN',
-        message: 'It is not your turn',
-      });
+      this.send(player.ws!, { type: 'ERROR', code: 'NOT_YOUR_TURN', message: 'It is not your turn' });
       return;
     }
     if (!isLegalMove(this.state, move)) {
-      this.send(player.ws!, {
-        type: 'ERROR',
-        code: 'ILLEGAL_MOVE',
-        message: 'That move is not legal',
-      });
+      this.send(player.ws!, { type: 'ERROR', code: 'ILLEGAL_MOVE', message: 'That move is not legal' });
       return;
     }
 
+    this.clearTurnTimer();
     this.state = applyMove(this.state, move);
 
     if (this.state.status === 'FINISHED') {
       this.broadcast({ type: 'GAME_OVER', state: this.state, lastMove: move });
+      this.cleanupIfAi();
       return;
     }
 
@@ -123,12 +128,15 @@ export class GameRoom {
 
     if (this.mode === 'ai' && this.state.currentTurn === 'NORTH') {
       this.triggerAiMoves();
+    } else if (this.mode === 'online') {
+      this.startTurnTimer();
     }
   }
 
   private triggerAiMoves(): void {
     setTimeout(() => {
       while (
+        !this.closed &&
         this.state.status === 'ACTIVE' &&
         this.state.currentTurn === 'NORTH' &&
         this.skill
@@ -138,6 +146,7 @@ export class GameRoom {
 
         if (this.state.status === 'FINISHED') {
           this.broadcast({ type: 'GAME_OVER', state: this.state, lastMove: aiMove });
+          this.cleanupIfAi();
           return;
         }
 
@@ -146,12 +155,59 @@ export class GameRoom {
     }, this.aiDelayMs);
   }
 
-  private handleRematch(): void {
-    this.state = createInitialState();
+  private handleRematch(player: Player): void {
+    if (this.mode === 'ai') {
+      // AI games: rematch immediately
+      this.doRematch();
+      return;
+    }
+    // Online: both players must request rematch
+    this.rematchVotes.add(player.side);
+    if (this.rematchVotes.size < 2) {
+      // Tell the opponent a rematch was requested
+      this.broadcastExcept(player.ws!, { type: 'REMATCH_REQUESTED' });
+      return;
+    }
+    this.doRematch();
+  }
+
+  private doRematch(): void {
+    this.clearTurnTimer();
+    this.rematchVotes.clear();
     for (const player of this.players) {
       player.side = player.side === 'SOUTH' ? 'NORTH' : 'SOUTH';
     }
     this.start();
+  }
+
+  private startTurnTimer(): void {
+    this.clearTurnTimer();
+    this.turnTimer = setTimeout(() => {
+      if (this.state.status !== 'ACTIVE') return;
+      const timedOutSide = this.state.currentTurn;
+      this.broadcast({ type: 'TURN_TIMEOUT', side: timedOutSide });
+      // End game — the player who timed out loses
+      this.state = {
+        ...this.state,
+        status: 'FINISHED',
+        winner: timedOutSide === 'SOUTH' ? 'NORTH' : 'SOUTH',
+      };
+      this.broadcast({ type: 'GAME_OVER', state: this.state });
+    }, TURN_TIMEOUT_MS);
+  }
+
+  private clearTurnTimer(): void {
+    if (this.turnTimer) {
+      clearTimeout(this.turnTimer);
+      this.turnTimer = undefined;
+    }
+  }
+
+  private cleanupIfAi(): void {
+    if (this.mode === 'ai') {
+      this.closed = true;
+      this.onEmpty?.();
+    }
   }
 
   handleDisconnect(ws: WebSocket): void {
@@ -163,9 +219,13 @@ export class GameRoom {
       this.broadcastExcept(ws, { type: 'OPPONENT_DISCONNECTED' });
       player.disconnectTimer = setTimeout(() => {
         this.closed = true;
+        this.clearTurnTimer();
+        this.onEmpty?.();
       }, RECONNECT_GRACE_MS);
     } else {
       this.closed = true;
+      this.clearTurnTimer();
+      this.onEmpty?.();
     }
   }
 

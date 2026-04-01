@@ -7,7 +7,7 @@ import { useAuthStore } from '../../../shared/store/authStore.ts';
 import { router } from '../../../router.tsx';
 
 export function useServerMessages(): void {
-  const { setGame, setRoomId, enqueueAnimation } = useGameStore();
+  const { setGame, setRoomId, enqueueAnimation, setRematchRequested } = useGameStore();
   const { setOpponentDisconnected } = useUiStore();
 
   useEffect(() => {
@@ -42,6 +42,18 @@ export function useServerMessages(): void {
           }
           break;
 
+        case 'TURN_TIMEOUT': {
+          const s = useGameStore.getState();
+          const isMe = msg.side === s.playerSide;
+          // Game over message will follow — just show a brief notification via uiStore
+          useUiStore.getState().setTurnTimedOut(isMe);
+          break;
+        }
+
+        case 'REMATCH_REQUESTED':
+          setRematchRequested(true);
+          break;
+
         case 'OPPONENT_DISCONNECTED':
           setOpponentDisconnected(true);
           break;
@@ -51,7 +63,6 @@ export function useServerMessages(): void {
           break;
 
         case 'AUTH_ERROR':
-          // Token expired or invalid — clear stored auth and redirect to login
           useAuthStore.getState().logout();
           wsService.disconnect();
           void router.navigate({ to: '/login' });
@@ -63,5 +74,5 @@ export function useServerMessages(): void {
       }
     });
     return remove;
-  }, [setGame, setRoomId, enqueueAnimation, setOpponentDisconnected]);
+  }, [setGame, setRoomId, enqueueAnimation, setOpponentDisconnected, setRematchRequested]);
 }

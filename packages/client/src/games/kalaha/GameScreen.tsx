@@ -15,7 +15,7 @@ const SPEEDS: { value: AnimSpeed; label: string }[] = [
 export function GameScreen(): React.ReactElement {
   const navigate = useNavigate();
   const { mode, skill, reset, displayedState, opponentUsername } = useGameStore();
-  const { animSpeed, setAnimSpeed, opponentDisconnected, reconnected } = useUiStore();
+  const { animSpeed, setAnimSpeed, opponentDisconnected, reconnected, turnTimedOut } = useUiStore();
 
   // Guard: if no active game, redirect back to game home
   useEffect(() => {
@@ -67,6 +67,11 @@ export function GameScreen(): React.ReactElement {
       {opponentDisconnected && (
         <div className="status-banner status-banner--disconnected" role="status">
           Opponent disconnected — waiting for them to return…
+        </div>
+      )}
+      {turnTimedOut && (
+        <div className="status-banner status-banner--timeout" role="status">
+          Time's up — turn timed out!
         </div>
       )}
       <Board />

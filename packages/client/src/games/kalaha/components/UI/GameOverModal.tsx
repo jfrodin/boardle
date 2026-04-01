@@ -10,13 +10,20 @@ interface GameOverModalProps {
 }
 
 export function GameOverModal({ state, playerSide }: GameOverModalProps): React.ReactElement {
-  const reset = useGameStore(s => s.reset);
+  const { reset, opponentUsername, mode, rematchRequested } = useGameStore(s => ({
+    reset: s.reset,
+    opponentUsername: s.opponentUsername,
+    mode: s.mode,
+    rematchRequested: s.rematchRequested,
+  }));
 
   const { winner, board } = state;
   const si = playerSide === 'SOUTH' ? 0 : 1;
   const oi = si === 0 ? 1 : 0;
   const myScore = board.stores[si];
   const theirScore = board.stores[oi];
+
+  const opponentLabel = opponentUsername ?? 'Opponent';
 
   const resultText =
     winner === 'DRAW'
@@ -51,14 +58,17 @@ export function GameOverModal({ state, playerSide }: GameOverModalProps): React.
           </div>
           <div className="score-divider">–</div>
           <div className="score-item">
-            <span className="score-label">Opponent</span>
+            <span className="score-label">{opponentLabel}</span>
             <span className="score-value">{theirScore}</span>
           </div>
         </div>
         <div className="modal-actions">
           <button className="primary-btn" onClick={handleRematch}>
-            Rematch
+            {mode === 'online' && rematchRequested ? 'Accept Rematch' : 'Rematch'}
           </button>
+          {mode === 'online' && !rematchRequested && (
+            <p className="rematch-hint">Waiting for opponent to accept...</p>
+          )}
           <button className="secondary-btn" onClick={handleHome}>
             Main Menu
           </button>

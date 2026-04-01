@@ -6,6 +6,7 @@ interface PitProps {
   isPlayable: boolean;
   isOpponent: boolean;
   isActive: boolean;
+  isLastMove?: boolean;
   dropKind?: DropKind;
   onClick?: () => void;
   label: string;
@@ -16,6 +17,7 @@ export function Pit({
   isPlayable,
   isOpponent,
   isActive,
+  isLastMove,
   dropKind,
   onClick,
   label,
@@ -28,6 +30,7 @@ export function Pit({
     isPlayable ? 'pit--playable' : '',
     count === 0 ? 'pit--empty' : '',
     isActive ? `pit--active pit--active-${dropKind ?? 'normal'}` : '',
+    isLastMove ? 'pit--last-move' : '',
   ]
     .filter(Boolean)
     .join(' ');
