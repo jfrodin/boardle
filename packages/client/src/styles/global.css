@@ -720,7 +720,7 @@ button { cursor: pointer; border: none; font: inherit; }
 
 /* === Responsive — Mobile === */
 @media (max-width: 520px) {
-  .game-screen { padding: 0.5rem; }
+  .game-screen { padding: 0.5rem; overflow-y: auto; align-items: flex-start; }
   .game-header { margin-bottom: 0.5rem; }
   .back-btn { font-size: 0.8rem; padding: 0.3rem 0.6rem; }
   .mode-label { font-size: 0.75rem; }
@@ -745,6 +745,12 @@ button { cursor: pointer; border: none; font: inherit; }
   .home-content { gap: 1.25rem; padding: 1.25rem; }
   .modal { padding: 1.75rem 1.25rem; }
   .score-value { font-size: 2rem; }
+}
+
+/* Hide tip jar on mobile when in-game to avoid covering the board */
+@media (max-width: 520px) {
+  .game-screen ~ .tipjar,
+  .game-screen + .tipjar { display: none; }
 }
 
 /* === Responsive — Landscape phone === */
