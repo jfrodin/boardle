@@ -10,3 +10,11 @@ export const users = sqliteTable('users', {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export const passwordResetTokens = sqliteTable('password_reset_tokens', {
+  token: text('token').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;

@@ -9,6 +9,8 @@ import { TipJar } from './shared/components/TipJar.tsx';
 import { PortalHome } from './portal/PortalHome.tsx';
 import { LoginScreen } from './portal/LoginScreen.tsx';
 import { RegisterScreen } from './portal/RegisterScreen.tsx';
+import { ForgotPasswordScreen } from './portal/ForgotPasswordScreen.tsx';
+import { ResetPasswordScreen } from './portal/ResetPasswordScreen.tsx';
 import { HomeScreen as KalahaHome } from './games/kalaha/HomeScreen.tsx';
 import { LobbyScreen } from './shared/components/LobbyScreen.tsx';
 import { GameScreen as KalahaGame } from './games/kalaha/GameScreen.tsx';
@@ -59,6 +61,21 @@ const registerRoute = createRoute({
   component: RegisterScreen,
 });
 
+const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/forgot-password',
+  component: ForgotPasswordScreen,
+});
+
+export const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reset-password',
+  validateSearch: (search: Record<string, unknown>) => ({
+    token: typeof search.token === 'string' ? search.token : '',
+  }),
+  component: ResetPasswordScreen,
+});
+
 const kalahaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/kalaha',
@@ -83,6 +100,8 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   registerRoute,
+  forgotPasswordRoute,
+  resetPasswordRoute,
   kalahaRoute,
   kalahaLobbyRoute,
   kalahaGameRoute,
