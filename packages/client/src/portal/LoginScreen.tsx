@@ -79,10 +79,6 @@ export function LoginScreen(): React.ReactElement {
           No account?{' '}
           <Link to="/register" className="auth-link">Create one</Link>
         </p>
-        <p className="auth-switch">
-          Forgot your password?{' '}
-          <Link to="/forgot-password" className="auth-link">Reset it</Link>
-        </p>
       </div>
     </div>
   );
