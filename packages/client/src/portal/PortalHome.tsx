@@ -40,6 +40,33 @@ const GAMES: GameCard[] = [
     available: false,
     path: '/connect4',
   },
+  {
+    id: 'solitaire',
+    title: 'Solitaire',
+    description: 'The classic card patience game. Clear the tableau, one move at a time.',
+    players: '1 player',
+    emoji: '🃏',
+    available: false,
+    path: '/solitaire',
+  },
+  {
+    id: 'backgammon',
+    title: 'Backgammon',
+    description: 'Race your pieces home while blocking your opponent. Dice and strategy.',
+    players: '1–2 players',
+    emoji: '🎯',
+    available: false,
+    path: '/backgammon',
+  },
+  {
+    id: 'checkers',
+    title: 'Checkers',
+    description: 'Jump over your opponent\'s pieces and king your way to victory.',
+    players: '1–2 players',
+    emoji: '⚫',
+    available: false,
+    path: '/checkers',
+  },
 ];
 
 export function PortalHome(): React.ReactElement {
