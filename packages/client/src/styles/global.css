@@ -60,7 +60,33 @@ button { cursor: pointer; border: none; font: inherit; }
   letter-spacing: -1px;
 }
 .portal-subtitle { color: var(--text-muted); margin-top: 0.4rem; }
-.portal-footer { text-align: center; }
+/* === Error Boundary === */
+.error-boundary-screen { background: var(--bg); }
+.error-boundary-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: 480px;
+  padding: 2rem;
+  text-align: center;
+}
+.error-boundary-title { font-size: 1.8rem; color: var(--text); }
+.error-boundary-message { color: var(--text-muted); }
+.error-boundary-detail {
+  font-size: 0.8rem;
+  color: var(--red);
+  font-family: monospace;
+  background: var(--bg-card);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  word-break: break-word;
+}
+.error-boundary-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
+
+.portal-footer { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.bug-report-link { font-size: 0.75rem; color: var(--text-muted); text-decoration: none; }
+.bug-report-link:hover { color: var(--text); text-decoration: underline; }
 
 /* === Game Grid === */
 .game-grid {
@@ -176,6 +202,46 @@ button { cursor: pointer; border: none; font: inherit; }
   display: flex; align-items: center; justify-content: center;
 }
 .tipjar-close:hover { color: var(--text); }
+
+/* =====================================================
+   GAME THEMES — override CSS variables per game
+   ===================================================== */
+
+/* Mancala / Kalaha — amber earth tones */
+.theme-kalaha {
+  --accent: #c47d0e;
+  --accent-light: #f5a623;
+  --accent-glow: rgba(196, 125, 14, 0.35);
+}
+.theme-kalaha .home-screen,
+.theme-kalaha.home-screen { background: radial-gradient(ellipse at 50% 0%, #271600 0%, #0d1117 65%); }
+.theme-kalaha .game-screen,
+.theme-kalaha.game-screen { background: var(--bg); }
+
+/* Checkers — warm wood / classic board */
+.theme-checkers {
+  --accent: #9a6234;
+  --accent-light: #c4935a;
+  --accent-glow: rgba(154, 98, 52, 0.35);
+}
+.theme-checkers .home-screen,
+.theme-checkers.home-screen { background: radial-gradient(ellipse at 50% 0%, #1e0f00 0%, #0d1117 65%); }
+.theme-checkers .game-screen,
+.theme-checkers.game-screen { background: var(--bg); }
+
+/* Portal card per-game accents */
+.game-card[data-game="kalaha"]           { border-color: rgba(196, 125, 14, 0.35); }
+.game-card[data-game="kalaha"]:hover     { border-color: #c47d0e; box-shadow: 0 8px 24px rgba(196, 125, 14, 0.25); }
+.game-card[data-game="kalaha"] .game-card-meta { color: #f5a623; }
+
+.game-card[data-game="checkers"]         { border-color: rgba(154, 98, 52, 0.35); }
+.game-card[data-game="checkers"]:hover   { border-color: #9a6234; box-shadow: 0 8px 24px rgba(154, 98, 52, 0.25); }
+.game-card[data-game="checkers"] .game-card-meta { color: #c4935a; }
+
+.game-card[data-game="yatzy"]            { border-color: rgba(37, 99, 235, 0.2); }
+.game-card[data-game="connect4"]         { border-color: rgba(220, 38, 38, 0.2); }
+.game-card[data-game="solitaire"]        { border-color: rgba(22, 163, 74, 0.2); }
+.game-card[data-game="backgammon"]       { border-color: rgba(159, 18, 57, 0.2); }
 
 /* === Home Screen === */
 .home-screen { background: radial-gradient(ellipse at 50% 0%, #1a1535 0%, #0d1117 60%); }
@@ -771,4 +837,131 @@ button { cursor: pointer; border: none; font: inherit; }
   .board { padding: 0.4rem; gap: 0.25rem; }
   .pit { min-width: 0; aspect-ratio: 1; }
   .stone { width: 5px; height: 5px; }
+}
+
+/* =====================================================
+   CHECKERS
+   ===================================================== */
+
+.checkers-game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* 8×8 grid */
+.checkers-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: min(80vw, 560px);
+  height: min(80vw, 560px);
+  border: 3px solid #2a3350;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+/* Individual squares */
+.checkers-square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  position: relative;
+  transition: background var(--transition);
+}
+
+.checkers-square--light {
+  background: #e8d5b0;
+}
+.checkers-square--dark {
+  background: #6b4c2a;
+}
+.checkers-square--selected {
+  background: #9b7a45 !important;
+  box-shadow: inset 0 0 0 3px var(--accent-light);
+}
+.checkers-square--target {
+  background: #7a5a35 !important;
+  cursor: pointer;
+}
+.checkers-square--target:hover {
+  background: #8a6a45 !important;
+}
+.checkers-square--must-move {
+  box-shadow: inset 0 0 0 2px var(--accent-light);
+}
+.checkers-square--last-move {
+  background: #5a7a4a !important;
+}
+
+/* Dot for legal landing */
+.checkers-dot {
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.7);
+  pointer-events: none;
+}
+
+/* Pieces */
+.checkers-piece {
+  width: 72%;
+  height: 72%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5), inset 0 1px 3px rgba(255,255,255,0.2);
+  transition: transform 120ms ease;
+  pointer-events: none;
+}
+
+.checkers-piece--south {
+  background: radial-gradient(circle at 35% 35%, #e84545, #8b1a1a);
+  border: 2px solid #c03030;
+}
+.checkers-piece--north {
+  background: radial-gradient(circle at 35% 35%, #f0f0f0, #a0a0a0);
+  border: 2px solid #808080;
+}
+
+.checkers-piece--king {
+  box-shadow: 0 3px 8px rgba(0,0,0,0.5), 0 0 10px rgba(255, 215, 0, 0.6), inset 0 1px 3px rgba(255,255,255,0.2);
+}
+
+.checkers-piece-crown {
+  font-size: 42%;
+  line-height: 1;
+  color: #ffd700;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+}
+
+/* Hover on clickable dark squares */
+.checkers-square--dark:not(:disabled):hover .checkers-piece {
+  transform: scale(1.08);
+}
+
+/* === Responsive === */
+@media (max-width: 520px) {
+  .checkers-board {
+    width: min(96vw, 400px);
+    height: min(96vw, 400px);
+  }
+  .checkers-dot { width: 30%; height: 30%; }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .checkers-board {
+    width: min(70vh, 400px);
+    height: min(70vh, 400px);
+  }
 }

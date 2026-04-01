@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useLocation } from '@tanstack/react-router';
 import { wsService } from '../services/wsService.ts';
 
 const LOBBY_TIMEOUT_MS = 120_000; // 2 minutes
 
 export function LobbyScreen(): React.ReactElement {
   const navigate = useNavigate();
+  const location = useLocation();
   const [timedOut, setTimedOut] = useState(false);
+
+  // Derive back path from the current lobby URL (e.g. /checkers/lobby → /checkers)
+  const backPath = location.pathname.replace('/lobby', '') || '/';
 
   useEffect(() => {
     const t = setTimeout(() => setTimedOut(true), LOBBY_TIMEOUT_MS);
@@ -15,7 +19,7 @@ export function LobbyScreen(): React.ReactElement {
 
   function cancel(): void {
     wsService.send({ type: 'LEAVE_ROOM' });
-    void navigate({ to: '/kalaha' });
+    void navigate({ to: backPath as '/' });
   }
 
   if (timedOut) {

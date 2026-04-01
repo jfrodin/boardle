@@ -1,34 +1,32 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Board } from './components/Board/Board.tsx';
-import { useGameStore } from './store/gameStore.ts';
+import { CheckersBoard } from './components/Board/Board.tsx';
+import { useCheckersStore } from './store/gameStore.ts';
 import { useUiStore } from '../../shared/store/uiStore.ts';
 import { wsService } from '../../shared/services/wsService.ts';
-import type { AnimSpeed } from '../../shared/store/uiStore.ts';
-
-const SPEEDS: { value: AnimSpeed; label: string }[] = [
-  { value: 'slow',   label: '🐢' },
-  { value: 'normal', label: '🚶' },
-  { value: 'fast',   label: '⚡' },
-];
 
 export function GameScreen(): React.ReactElement {
   const navigate = useNavigate();
-  const { mode, skill, reset, displayedState, opponentUsername } = useGameStore();
-  const { animSpeed, setAnimSpeed, opponentDisconnected, reconnected, turnTimedOut } = useUiStore();
+  const mode = useCheckersStore(s => s.mode);
+  const skill = useCheckersStore(s => s.skill);
+  const reset = useCheckersStore(s => s.reset);
+  const displayedState = useCheckersStore(s => s.displayedState);
+  const opponentUsername = useCheckersStore(s => s.opponentUsername);
+  const { opponentDisconnected, reconnected, turnTimedOut } = useUiStore();
+  const leavingRef = React.useRef(false);
 
-  // Guard: if no active game, redirect back to game home
   useEffect(() => {
-    if (!displayedState) {
-      void navigate({ to: '/kalaha' });
+    if (!displayedState && !leavingRef.current) {
+      void navigate({ to: '/checkers' });
     }
   }, [displayedState, navigate]);
 
   function handleLeave(): void {
+    leavingRef.current = true;
     wsService.send({ type: 'LEAVE_ROOM' });
     reset();
-    sessionStorage.removeItem('kalahaRoomId');
-    sessionStorage.removeItem('kalahaSide');
+    sessionStorage.removeItem('checkersRoomId');
+    sessionStorage.removeItem('checkersSide');
     void navigate({ to: '/' });
   }
 
@@ -39,25 +37,12 @@ export function GameScreen(): React.ReactElement {
   if (!displayedState) return <></>;
 
   return (
-    <div className="screen game-screen theme-kalaha">
+    <div className="screen game-screen theme-checkers">
       <header className="game-header">
         <button className="back-btn" onClick={handleLeave} aria-label="Back to menu">
           ← Menu
         </button>
         <span className="mode-label">{modeLabel}</span>
-        <div className="speed-selector" aria-label="Animation speed">
-          {SPEEDS.map(s => (
-            <button
-              key={s.value}
-              className={`speed-btn${animSpeed === s.value ? ' active' : ''}`}
-              onClick={() => setAnimSpeed(s.value)}
-              title={s.value.charAt(0).toUpperCase() + s.value.slice(1)}
-              aria-pressed={animSpeed === s.value}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
       </header>
       {reconnected && (
         <div className="status-banner status-banner--reconnected" role="status">
@@ -74,7 +59,7 @@ export function GameScreen(): React.ReactElement {
           Time's up — turn timed out!
         </div>
       )}
-      <Board />
+      <CheckersBoard />
     </div>
   );
 }
