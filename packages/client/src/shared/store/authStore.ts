@@ -16,6 +16,8 @@ interface AuthState {
   init: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }
@@ -85,6 +87,30 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       set({ token, user, isLoading: false });
+    } catch (err) {
+      set({ isLoading: false, error: (err as Error).message });
+      throw err;
+    }
+  },
+
+  async forgotPassword(email) {
+    set({ isLoading: true, error: null });
+    try {
+      await apiFetch<{ ok: boolean }>('/auth/forgot-password', { email });
+      set({ isLoading: false });
+    } catch (err) {
+      set({ isLoading: false, error: (err as Error).message });
+      throw err;
+    }
+  },
+
+  async resetPassword(token, password) {
+    set({ isLoading: true, error: null });
+    try {
+      const { token: jwt, user } = await apiFetch<AuthResponse>('/auth/reset-password', { token, password });
+      localStorage.setItem(TOKEN_KEY, jwt);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      set({ token: jwt, user, isLoading: false });
     } catch (err) {
       set({ isLoading: false, error: (err as Error).message });
       throw err;

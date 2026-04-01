@@ -1,10 +1,11 @@
-import { randomUUID } from 'crypto';
-import { eq, or } from 'drizzle-orm';
+import { randomUUID, randomBytes } from 'crypto';
+import { eq, or, lt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { Resend } from 'resend';
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db/index.js';
-import { users } from '../db/schema.js';
+import { users, passwordResetTokens } from '../db/schema.js';
 
 // ---- Validation schemas ----
 
@@ -27,6 +28,18 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(72, 'Password too long'),
 });
 
 // ---- Helpers ----
@@ -138,6 +151,84 @@ export function registerAuthRoutes(fastify: FastifyInstance, db: Db): void {
       token,
       user: { id: user.id, username: user.username, email: user.email },
     });
+  });
+
+  // POST /auth/forgot-password
+  fastify.post('/auth/forgot-password', {
+    config: { rateLimit: { max: 3, timeWindow: '15 minutes' } },
+  }, async (req, reply) => {
+    const result = forgotPasswordSchema.safeParse(req.body);
+    if (!result.success) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: result.error.issues[0]?.message ?? 'Invalid input' });
+    }
+
+    const { email } = result.data;
+    const normalizedEmail = email.toLowerCase();
+
+    // Always return 200 to prevent email enumeration
+    const [user] = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.email, normalizedEmail));
+    if (!user) return reply.send({ ok: true });
+
+    // Delete any existing tokens for this user, then create a new one
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, user.id));
+    // Also clean up any globally expired tokens
+    await db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, new Date()));
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await db.insert(passwordResetTokens).values({ token, userId: user.id, expiresAt });
+
+    const resendKey = process.env.RESEND_API_KEY;
+    const appUrl = process.env.APP_URL ?? 'https://boardle.se';
+    const resetLink = `${appUrl}/reset-password?token=${token}`;
+
+    if (resendKey) {
+      const resend = new Resend(resendKey);
+      await resend.emails.send({
+        from: 'Boardle <noreply@boardle.se>',
+        to: user.email,
+        subject: 'Reset your Boardle password',
+        html: `
+          <p>Hi,</p>
+          <p>Someone requested a password reset for your Boardle account.</p>
+          <p><a href="${resetLink}" style="color:#7c3aed;font-weight:bold;">Reset my password</a></p>
+          <p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+          <p>— Boardle</p>
+        `,
+      });
+    } else {
+      // Dev fallback — log the link
+      console.log(`[DEV] Password reset link: ${resetLink}`);
+    }
+
+    return reply.send({ ok: true });
+  });
+
+  // POST /auth/reset-password
+  fastify.post('/auth/reset-password', {
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+  }, async (req, reply) => {
+    const result = resetPasswordSchema.safeParse(req.body);
+    if (!result.success) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: result.error.issues[0]?.message ?? 'Invalid input' });
+    }
+
+    const { token, password } = result.data;
+
+    const [row] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+    if (!row || row.expiresAt < new Date()) {
+      return reply.status(400).send({ error: 'INVALID_TOKEN', message: 'This reset link is invalid or has expired.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    await db.update(users).set({ passwordHash }).where(eq(users.id, row.userId));
+    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+
+    const [user] = await db.select({ id: users.id, username: users.username, email: users.email }).from(users).where(eq(users.id, row.userId));
+    if (!user) return reply.status(404).send({ error: 'NOT_FOUND', message: 'User not found' });
+
+    const newToken = issueToken(fastify, { userId: user.id, username: user.username });
+    return reply.send({ token: newToken, user });
   });
 
   // GET /auth/me — requires valid JWT
