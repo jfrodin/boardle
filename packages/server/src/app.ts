@@ -30,32 +30,31 @@ export function buildApp(opts: AppOptions) {
 
   const db: Db = createDb(opts.dbPath);
 
-  // Decorate fastify with the db instance so routes can access it
   fastify.decorate('db', db);
 
-  // JWT
   fastify.register(fastifyJwt, { secret: opts.jwtSecret });
 
-  // Rate limiting (applied globally; individual routes can override)
   fastify.register(rateLimit, {
-    global: false, // opt-in per-route
+    global: false,
     max: 100,
     timeWindow: '1 minute',
   });
 
-  // WebSocket support
+  // WebSocket — registered at root scope, no CORS needed (JWT handles auth)
   fastify.register(fastifyWebsocket);
+  registerWsRoutes(fastify);
 
-  // CORS
-  fastify.register(fastifyCors, {
-    origin: opts.corsOrigin,
-    methods: ['GET', 'POST', 'OPTIONS'],
-  });
-
+  // Health check
   fastify.get('/health', async () => ({ status: 'ok' }));
 
-  registerAuthRoutes(fastify, db);
-  registerWsRoutes(fastify);
+  // Auth routes — scoped with CORS
+  fastify.register(async (app) => {
+    app.register(fastifyCors, {
+      origin: opts.corsOrigin,
+      methods: ['GET', 'POST', 'OPTIONS'],
+    });
+    registerAuthRoutes(app, db);
+  });
 
   // Serve built React app in production
   if (process.env.NODE_ENV === 'production') {
@@ -64,7 +63,6 @@ export function buildApp(opts: AppOptions) {
       root: clientDist,
       wildcard: false,
     });
-    // SPA fallback — all unmatched GET requests return index.html
     fastify.setNotFoundHandler(async (_req, reply) => {
       return reply.sendFile('index.html', clientDist);
     });
@@ -73,7 +71,6 @@ export function buildApp(opts: AppOptions) {
   return fastify;
 }
 
-// Extend FastifyInstance type so TypeScript knows about db
 declare module 'fastify' {
   interface FastifyInstance {
     db: Db;
