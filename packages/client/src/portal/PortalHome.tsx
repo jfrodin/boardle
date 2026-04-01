@@ -15,7 +15,7 @@ interface GameCard {
 const GAMES: GameCard[] = [
   {
     id: 'kalaha',
-    title: 'Kalaha',
+    title: 'Mancala (Kalaha)',
     description: "Classic stone-sowing strategy. Capture your opponent's seeds and fill your store.",
     players: '1–2 players',
     emoji: '🪨',
