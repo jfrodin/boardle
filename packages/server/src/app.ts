@@ -12,13 +12,9 @@ import { registerWsRoutes } from './ws/wsHandler.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export interface AppOptions {
-  /** SQLite file path. Use ':memory:' in tests. */
   dbPath: string;
-  /** JWT signing secret. Must be >=32 chars in production. */
   jwtSecret: string;
-  /** Allowed CORS origin. Use '*' for dev, real origin in prod. */
   corsOrigin: string;
-  /** Suppress fastify logger output in tests. */
   silent?: boolean;
 }
 
@@ -28,47 +24,29 @@ export function buildApp(opts: AppOptions) {
   });
 
   const db: Db = createDb(opts.dbPath);
-
-  // Decorate fastify with the db instance so routes can access it
   fastify.decorate('db', db);
 
-  // JWT
   fastify.register(fastifyJwt, { secret: opts.jwtSecret });
 
-  // Rate limiting (applied globally; individual routes can override)
   fastify.register(rateLimit, {
-    global: false, // opt-in per-route
+    global: false,
     max: 100,
     timeWindow: '1 minute',
   });
 
-  // WebSocket support
   fastify.register(fastifyWebsocket);
-
-  // CORS — skip for WebSocket upgrade requests
-  fastify.addHook('onRequest', async (_req, reply) => {
-    if (_req.url.startsWith('/ws')) return;
-    reply.header('Access-Control-Allow-Origin', opts.corsOrigin);
-    reply.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (_req.method === 'OPTIONS') {
-      await reply.status(204).send();
-    }
-  });
 
   fastify.get('/health', async () => ({ status: 'ok' }));
 
   registerAuthRoutes(fastify, db);
   registerWsRoutes(fastify);
 
-  // Serve built React app in production
   if (process.env.NODE_ENV === 'production') {
     const clientDist = path.resolve(__dirname, '../../client/dist');
     fastify.register(fastifyStatic, {
       root: clientDist,
       wildcard: false,
     });
-    // SPA fallback — all unmatched GET requests return index.html
     fastify.setNotFoundHandler(async (_req, reply) => {
       return reply.sendFile('index.html', clientDist);
     });
@@ -77,7 +55,6 @@ export function buildApp(opts: AppOptions) {
   return fastify;
 }
 
-// Extend FastifyInstance type so TypeScript knows about db
 declare module 'fastify' {
   interface FastifyInstance {
     db: Db;
