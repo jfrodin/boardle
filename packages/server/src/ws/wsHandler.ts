@@ -25,21 +25,8 @@ const MIN_ANIM_DELAY = 0;
 const MAX_ANIM_DELAY = 2000;
 
 export function registerWsRoutes(fastify: FastifyInstance): void {
-  fastify.get('/ws', { websocket: true }, (socket, req) => {
-    const token = (req.query as Record<string, string | undefined> | undefined)?.token;
-    let user: AuthUser | null = null;
-
-    if (token) {
-      try {
-        user = fastify.jwt.verify<AuthUser>(token);
-      } catch {
-        send(socket, { type: 'AUTH_ERROR', message: 'Invalid or expired token. Please log in again.' });
-        socket.close();
-        return;
-      }
-    }
-
-    wsUserMap.set(socket, user);
+  fastify.get('/ws', { websocket: true }, (socket, _req) => {
+    wsUserMap.set(socket, null);
 
     socket.on('message', (raw: Buffer | string) => {
       // Size limit
@@ -70,7 +57,7 @@ export function registerWsRoutes(fastify: FastifyInstance): void {
         return;
       }
 
-      handleMessage(socket, msg, user);
+      handleMessage(socket, msg, fastify);
     });
 
     socket.on('close', () => {
@@ -89,8 +76,22 @@ export function registerWsRoutes(fastify: FastifyInstance): void {
   });
 }
 
-function handleMessage(ws: WebSocket, msg: ClientMessage, user: AuthUser | null): void {
+function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstance): void {
+  const user = wsUserMap.get(ws) ?? null;
+
   switch (msg.type) {
+    case 'AUTH': {
+      try {
+        const verified = fastify.jwt.verify<AuthUser>(msg.token);
+        wsUserMap.set(ws, verified);
+        send(ws, { type: 'AUTH_OK', username: verified.username });
+      } catch {
+        send(ws, { type: 'AUTH_ERROR', message: 'Invalid or expired token. Please log in again.' });
+        ws.close();
+      }
+      return;
+    }
+
     case 'START_AI_GAME': {
       // Validate skill
       if (!VALID_SKILLS.has(msg.skill)) {

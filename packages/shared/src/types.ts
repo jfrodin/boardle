@@ -42,6 +42,7 @@ export interface Move {
 export type GameId = 'kalaha';
 
 export type ClientMessage =
+  | { type: 'AUTH'; token: string }
   | { type: 'JOIN_QUEUE'; gameId: GameId }
   | { type: 'JOIN_ROOM'; roomId: string; playerSide?: PlayerSide }
   | { type: 'START_AI_GAME'; gameId: GameId; skill: AiSkill; animDelay?: number }
@@ -50,6 +51,7 @@ export type ClientMessage =
   | { type: 'REMATCH' };
 
 export type ServerMessage =
+  | { type: 'AUTH_OK'; username: string }
   | { type: 'ROOM_JOINED'; roomId: string; side: PlayerSide }
   | { type: 'GAME_START'; state: GameState; side: PlayerSide; mode: GameMode; skill?: AiSkill; opponentUsername?: string }
   | { type: 'STATE_UPDATE'; state: GameState; lastMove: Move }

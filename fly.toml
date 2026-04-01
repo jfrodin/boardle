@@ -28,6 +28,10 @@ primary_region = 'ams'
     path = "/health"
     timeout = "5s"
 
+[[mounts]]
+  source = 'boardle_data'
+  destination = '/data'
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
