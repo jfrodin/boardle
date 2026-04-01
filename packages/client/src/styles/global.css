@@ -46,7 +46,14 @@ a { touch-action: manipulation; }
 .screen { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 
 /* === Portal Screen === */
-.portal-screen { background: radial-gradient(ellipse at 50% 0%, #1a1535 0%, #0d1117 60%); }
+.portal-screen {
+  background: radial-gradient(ellipse at 50% 0%, #1a1535 0%, #0d1117 60%);
+  overflow-y: auto;
+  align-items: flex-start;
+}
+.portal-screen .portal-content {
+  margin: 0 auto; /* horizontally center within the scrollable screen */
+}
 .portal-content {
   display: flex;
   flex-direction: column;
