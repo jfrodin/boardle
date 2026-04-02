@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://boardle.se/sitemap.xml
