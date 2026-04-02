@@ -1527,15 +1527,17 @@ a { touch-action: manipulation; }
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
+  table-layout: fixed;
 }
 .yatzy-scorecard th,
 .yatzy-scorecard td {
   padding: 0.3rem 0.5rem;
   text-align: center;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+  overflow: hidden;
 }
-.scorecard-label-col { text-align: left; min-width: 130px; }
-.scorecard-player-col { min-width: 72px; font-size: 0.78rem; color: var(--text-muted); }
+.scorecard-label-col { text-align: left; width: 38%; }
+.scorecard-player-col { width: auto; font-size: 0.78rem; color: var(--text-muted); }
 .scorecard-player-col--active { color: var(--accent-light); }
 .scorecard-player-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
 .scorecard-bot-tag { font-size: 0.65rem; margin-left: 2px; }
@@ -1636,8 +1638,7 @@ a { touch-action: manipulation; }
   .yatzy-die { width: 52px; height: 52px; border-radius: 10px; }
   .yatzy-die-dot { width: 9px; height: 9px; }
   .yatzy-scorecard { font-size: 0.78rem; }
-  .scorecard-label-col { min-width: 100px; }
-  .scorecard-player-col { min-width: 56px; }
+  .scorecard-label-col { width: 35%; }
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
