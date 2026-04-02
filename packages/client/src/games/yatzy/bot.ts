@@ -1,137 +1,160 @@
 import type { DieValue, CategoryKey, ScoreCard, YatzyState } from './engine.ts';
 import {
+  UPPER_CATEGORIES,
   ALL_CATEGORIES,
   scoreCategory,
+  upperScore,
   rollDice,
   applyRoll,
   applyScoreCategory,
 } from './engine.ts';
 
-// ---- Expected value helpers ----
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-function counts(dice: DieValue[]): Record<number, number> {
-  const c: Record<number, number> = {};
-  for (const d of dice) c[d] = (c[d] ?? 0) + 1;
-  return c;
+// ---- Helpers ----
+
+// How many upper categories are still unscored
+function upperRemaining(scoreCard: ScoreCard): number {
+  return UPPER_CATEGORIES.filter(k => scoreCard[k] === undefined).length;
 }
 
-// Decide which dice to hold to maximise expected score for a given category
-function bestHoldForCategory(dice: DieValue[], category: CategoryKey): boolean[] {
-  const c = counts(dice);
+// Estimated upper score needed per remaining upper category to hit bonus
+// Returns how many points behind pace the bot is (positive = behind)
+function upperBonusDeficit(scoreCard: ScoreCard): number {
+  const scored = upperScore(scoreCard);
+  const remaining = upperRemaining(scoreCard);
+  if (remaining === 0) return 0;
+  // Need 63 total. Average needed per remaining slot = (63 - scored) / remaining
+  // Ideal pace is ~10.5 per slot. Deficit per slot = needed - 10.5
+  const needed = Math.max(0, 63 - scored);
+  return needed / remaining - 10.5;
+}
 
-  switch (category) {
-    case 'ones':   return dice.map(d => d === 1);
-    case 'twos':   return dice.map(d => d === 2);
-    case 'threes': return dice.map(d => d === 3);
-    case 'fours':  return dice.map(d => d === 4);
-    case 'fives':  return dice.map(d => d === 5);
-    case 'sixes':  return dice.map(d => d === 6);
+// Weight to add to a category score based on strategic value
+function categoryWeight(
+  category: CategoryKey,
+  score: number,
+  scoreCard: ScoreCard,
+  availableCount: number,
+): number {
+  let weight = 0;
 
-    case 'one_pair':
-    case 'two_pairs': {
-      // Hold dice that appear in pairs or better
-      const pairVals = new Set(Object.keys(c).map(Number).filter(v => c[v] >= 2));
-      return dice.map(d => pairVals.has(d));
-    }
-    case 'three_of_a_kind':
-    case 'four_of_a_kind':
-    case 'yatzy': {
-      // Hold the most frequent value
-      const best = Object.keys(c).map(Number).sort((a, b) => c[b] - c[a] || b - a)[0];
-      return dice.map(d => d === best);
-    }
-    case 'full_house': {
-      const three = Object.keys(c).map(Number).find(v => c[v] >= 3);
-      const two   = Object.keys(c).map(Number).find(v => c[v] === 2 && v !== three);
-      return dice.map(d => d === three || d === two);
-    }
-    case 'small_straight': {
-      // Hold dice in 1-5
-      const keep = new Set([1, 2, 3, 4, 5]);
-      const held: boolean[] = [false, false, false, false, false];
-      const usedIdx = new Set<number>();
-      for (const v of [1, 2, 3, 4, 5]) {
-        const idx = dice.findIndex((d, i) => d === v && !usedIdx.has(i));
-        if (idx !== -1 && keep.has(v)) { held[idx] = true; usedIdx.add(idx); }
-      }
-      return held;
-    }
-    case 'large_straight': {
-      const held: boolean[] = [false, false, false, false, false];
-      const usedIdx = new Set<number>();
-      for (const v of [2, 3, 4, 5, 6]) {
-        const idx = dice.findIndex((d, i) => d === v && !usedIdx.has(i));
-        if (idx !== -1) { held[idx] = true; usedIdx.add(idx); }
-      }
-      return held;
-    }
-    case 'chance':
-      // Hold dice >= 4
-      return dice.map(d => d >= 4);
-    default:
-      return [false, false, false, false, false];
+  // Upper bonus pressure: reward upper categories when behind pace
+  if (UPPER_CATEGORIES.includes(category)) {
+    const deficit = upperBonusDeficit(scoreCard);
+    if (deficit > 0) weight += deficit * 1.5; // behind pace — prioritise upper
   }
+
+  // Chance: penalise using it early (save it as a dump for bad turns)
+  if (category === 'chance' && availableCount > 4) {
+    weight -= 8;
+  }
+
+  // Yatzy: strongly reward — 50 pts + it's rare, don't waste a shot
+  if (category === 'yatzy' && score === 50) {
+    weight += 20;
+  }
+
+  return weight;
 }
 
-// Simulate expected score for a category with N rolls remaining
-function expectedScore(
+// Best score across all available categories for a given dice roll
+function bestAvailableScore(dice: DieValue[], scoreCard: ScoreCard): number {
+  const available = ALL_CATEGORIES.filter(k => scoreCard[k] === undefined);
+  if (available.length === 0) return 0;
+
+  let best = -Infinity;
+  for (const cat of available) {
+    const s = scoreCategory(cat, dice) + categoryWeight(cat, scoreCategory(cat, dice), scoreCard, available.length);
+    if (s > best) best = s;
+  }
+  return best;
+}
+
+// ---- Core: evaluate a hold pattern ----
+// Simulates SIMS rolls from the given hold and returns the average
+// best-available-category score across all simulations.
+function evalHold(
   dice: DieValue[],
   held: boolean[],
-  category: CategoryKey,
-  rollsLeft: number,
+  scoreCard: ScoreCard,
+  rollsRemaining: number,
+  sims: number,
 ): number {
-  if (rollsLeft === 0) return scoreCategory(category, dice);
-
-  const SIMS = 120;
-  let total = 0;
-  for (let i = 0; i < SIMS; i++) {
-    const newDice = rollDice(dice, held);
-    const newHeld = bestHoldForCategory(newDice, category);
-    total += expectedScore(newDice, newHeld, category, rollsLeft - 1);
+  if (rollsRemaining === 0) {
+    return bestAvailableScore(dice, scoreCard);
   }
-  return total / SIMS;
+
+  let total = 0;
+  for (let i = 0; i < sims; i++) {
+    const newDice = rollDice(dice, held);
+    // For the last roll, just evaluate; for intermediate rolls, pick best hold greedily
+    if (rollsRemaining === 1) {
+      total += bestAvailableScore(newDice, scoreCard);
+    } else {
+      const bestHeld = greedyBestHold(newDice, scoreCard, rollsRemaining - 1, Math.max(10, Math.floor(sims / 4)));
+      total += evalHold(newDice, bestHeld, scoreCard, rollsRemaining - 1, Math.max(10, Math.floor(sims / 4)));
+    }
+  }
+  return total / sims;
 }
 
-// Pick the best available category given current dice + rolls remaining
+// ---- Find best hold by trying all 32 patterns ----
+function greedyBestHold(
+  dice: DieValue[],
+  scoreCard: ScoreCard,
+  rollsRemaining: number,
+  sims = 40,
+): boolean[] {
+  let bestHeld: boolean[] = [false, false, false, false, false];
+  let bestEV = -Infinity;
+
+  // Try all 32 hold combinations
+  for (let mask = 0; mask < 32; mask++) {
+    const held = dice.map((_, i) => Boolean(mask & (1 << i)));
+    const ev = evalHold(dice, held, scoreCard, rollsRemaining, sims);
+    if (ev > bestEV) {
+      bestEV = ev;
+      bestHeld = held;
+    }
+  }
+
+  return bestHeld;
+}
+
+// ---- Public: pick best category to score ----
 export function pickBestCategory(
   dice: DieValue[],
   scoreCard: ScoreCard,
-  rollsLeft: number,
 ): CategoryKey {
   const available = ALL_CATEGORIES.filter(k => scoreCard[k] === undefined);
+  if (available.length === 0) return 'chance'; // fallback, shouldn't happen
 
   let bestCat = available[0];
-  let bestEV = -Infinity;
+  let bestValue = -Infinity;
 
   for (const cat of available) {
-    const current = scoreCategory(cat, dice);
-    // If we already have a great score, just use it
-    if (current > 0 && rollsLeft === 0) {
-      const ev = current;
-      if (ev > bestEV) { bestEV = ev; bestCat = cat; }
-      continue;
+    const score = scoreCategory(cat, dice);
+    const weighted = score + categoryWeight(cat, score, scoreCard, available.length);
+    if (weighted > bestValue) {
+      bestValue = weighted;
+      bestCat = cat;
     }
-    const held = bestHoldForCategory(dice, cat);
-    const ev = rollsLeft > 0
-      ? expectedScore(dice, held, cat, rollsLeft)
-      : current;
-    if (ev > bestEV) { bestEV = ev; bestCat = cat; }
   }
 
   return bestCat;
 }
 
-// Choose which dice to hold (for bot's roll decision)
+// ---- Public: choose hold ----
 export function botChooseHold(
   dice: DieValue[],
   scoreCard: ScoreCard,
   rollsLeft: number,
 ): boolean[] {
-  const targetCategory = pickBestCategory(dice, scoreCard, rollsLeft);
-  return bestHoldForCategory(dice, targetCategory);
+  return greedyBestHold(dice, scoreCard, rollsLeft, 40);
 }
 
-// Run a full bot turn: rolls + picks category. Returns final state.
+// ---- Run a full bot turn ----
 export async function runBotTurn(
   state: YatzyState,
   onStateUpdate: (s: YatzyState) => void,
@@ -139,29 +162,23 @@ export async function runBotTurn(
 ): Promise<YatzyState> {
   let s = state;
 
-  const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
-
-  // Bot gets up to 2 more rolls (first roll already happened when turn started)
-  // Actually bot gets all 3 rolls — roll, maybe hold, roll, maybe hold, pick
+  // First roll
   s = applyRoll(s);
   onStateUpdate(s);
   await sleep(delay);
 
+  // Up to 2 more rolls
   while (s.rollsLeft > 0) {
     const player = s.players[s.currentPlayerIndex];
+
+    // Find the best hold given rolls remaining
     const held = botChooseHold(s.dice, player.scoreCard, s.rollsLeft);
-    // If all dice held, no point rolling again
-    const allHeld = held.every(Boolean);
-    if (allHeld) break;
 
-    // Decide if rolling again is worth it
-    const currentBest = pickBestCategory(s.dice, player.scoreCard, 0);
-    const currentScore = scoreCategory(currentBest, s.dice);
-    const projectedBest = pickBestCategory(s.dice, player.scoreCard, s.rollsLeft);
-    const projectedHeld = botChooseHold(s.dice, player.scoreCard, s.rollsLeft);
-    const projectedEV = expectedScore(s.dice, projectedHeld, projectedBest, s.rollsLeft);
+    // Is it worth rolling? Compare best score now vs EV of rolling with this hold
+    const currentBestScore = scoreCategory(pickBestCategory(s.dice, player.scoreCard), s.dice);
+    const ev = evalHold(s.dice, held, player.scoreCard, s.rollsLeft, 40);
 
-    if (projectedEV <= currentScore) break; // no gain from rolling
+    if (ev <= currentBestScore || held.every(Boolean)) break;
 
     s = { ...s, held };
     s = applyRoll(s);
@@ -169,9 +186,9 @@ export async function runBotTurn(
     await sleep(delay);
   }
 
-  // Pick category
+  // Score the best available category
   const player = s.players[s.currentPlayerIndex];
-  const chosen = pickBestCategory(s.dice, player.scoreCard, 0);
+  const chosen = pickBestCategory(s.dice, player.scoreCard);
   s = applyScoreCategory(s, chosen);
   onStateUpdate(s);
   return s;
