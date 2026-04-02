@@ -47,12 +47,15 @@ a { touch-action: manipulation; }
 
 /* === Portal Screen === */
 .portal-screen {
-  background: radial-gradient(ellipse at 50% 0%, #1a1535 0%, #0d1117 60%);
+  background-color: #f7f0df;
+  background-image:
+    repeating-linear-gradient(transparent, transparent 31px, #d4c5a9 31px, #d4c5a9 32px),
+    linear-gradient(90deg, transparent 60px, #f0a8a8 60px, #f0a8a8 62px, transparent 62px);
   overflow-y: auto;
   align-items: flex-start;
 }
 .portal-screen .portal-content {
-  margin: 0 auto; /* horizontally center within the scrollable screen */
+  margin: 0 auto;
 }
 .portal-content {
   display: flex;
@@ -68,11 +71,11 @@ a { touch-action: manipulation; }
 .portal-title {
   font-size: 3.5rem;
   font-weight: 900;
-  color: var(--accent-light);
-  text-shadow: 0 0 40px var(--accent-glow);
+  color: #1c1107;
   letter-spacing: -1px;
+  font-family: 'Fredoka One', system-ui, sans-serif;
 }
-.portal-subtitle { color: var(--text-muted); margin-top: 0.4rem; }
+.portal-subtitle { color: #7a5c40; margin-top: 0.4rem; }
 /* === Error Boundary === */
 .error-boundary-screen { background: var(--bg); }
 .error-boundary-content {
@@ -98,8 +101,8 @@ a { touch-action: manipulation; }
 .error-boundary-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
 
 .portal-footer { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
-.bug-report-link { font-size: 0.75rem; color: var(--text-muted); text-decoration: none; }
-.bug-report-link:hover { color: var(--text); text-decoration: underline; }
+.bug-report-link { font-size: 0.75rem; color: #7a5c40; text-decoration: none; }
+.bug-report-link:hover { color: #1c1107; text-decoration: underline; }
 
 /* === Game Grid === */
 .game-grid {
@@ -109,38 +112,38 @@ a { touch-action: manipulation; }
   width: 100%;
 }
 .game-card {
-  background: var(--bg-card);
-  border: 1px solid rgba(200, 136, 42, 0.2);
-  border-radius: var(--radius);
+  background: #fffdf5;
+  border: 2.5px solid #1c1107;
+  border-radius: 14px;
   padding: 1.5rem 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   position: relative;
-  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+  box-shadow: 4px 4px 0 #1c1107;
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
 .game-card--available {
   cursor: pointer;
 }
 .game-card--available:hover {
-  border-color: var(--accent);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #1c1107;
 }
 .game-card--available:focus-visible {
-  outline: 2px solid var(--accent-light);
+  outline: 3px solid #7c3aed;
   outline-offset: 2px;
 }
-.game-card--soon { opacity: 0.5; cursor: default; }
+.game-card--soon { opacity: 0.45; cursor: default; }
 .game-card-emoji { font-size: 2.5rem; line-height: 1; }
-.game-card-title { font-size: 1.2rem; font-weight: 700; color: var(--text); }
-.game-card-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; }
-.game-card-meta { font-size: 0.75rem; color: var(--accent); font-weight: 600; }
+.game-card-title { font-size: 1.2rem; font-weight: 700; color: #1c1107; }
+.game-card-desc { font-size: 0.82rem; color: #5a4030; line-height: 1.4; }
+.game-card-meta { font-size: 0.75rem; color: #7c3aed; font-weight: 600; }
 .game-card-badge {
   position: absolute;
   top: 0.75rem; right: 0.75rem;
-  background: rgba(255,255,255,0.08);
-  color: var(--text-muted);
+  background: #1c1107;
+  color: #f7f0df;
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -242,19 +245,13 @@ a { touch-action: manipulation; }
 .theme-checkers .game-screen,
 .theme-checkers.game-screen { background: var(--bg); }
 
-/* Portal card per-game accents */
-.game-card[data-game="kalaha"]           { border-color: rgba(196, 125, 14, 0.35); }
-.game-card[data-game="kalaha"]:hover     { border-color: #c47d0e; box-shadow: 0 8px 24px rgba(196, 125, 14, 0.25); }
-.game-card[data-game="kalaha"] .game-card-meta { color: #f5a623; }
-
-.game-card[data-game="checkers"]         { border-color: rgba(154, 98, 52, 0.35); }
-.game-card[data-game="checkers"]:hover   { border-color: #9a6234; box-shadow: 0 8px 24px rgba(154, 98, 52, 0.25); }
-.game-card[data-game="checkers"] .game-card-meta { color: #c4935a; }
-
-.game-card[data-game="yatzy"]            { border-color: rgba(37, 99, 235, 0.2); }
-.game-card[data-game="connect4"]         { border-color: rgba(220, 38, 38, 0.2); }
-.game-card[data-game="solitaire"]        { border-color: rgba(22, 163, 74, 0.2); }
-.game-card[data-game="backgammon"]       { border-color: rgba(159, 18, 57, 0.2); }
+/* Portal card per-game flat pastel fills */
+.game-card[data-game="kalaha"]     { background: #fef3c7; }
+.game-card[data-game="checkers"]   { background: #fee2e2; }
+.game-card[data-game="solitaire"]  { background: #dcfce7; }
+.game-card[data-game="yatzy"]      { background: #dbeafe; }
+.game-card[data-game="connect4"]   { background: #ffedd5; }
+.game-card[data-game="backgammon"] { background: #ede9fe; }
 
 /* === Home Screen === */
 .home-screen { background: radial-gradient(ellipse at 50% 0%, #1a1535 0%, #0d1117 60%); }
@@ -319,7 +316,7 @@ a { touch-action: manipulation; }
 .online-btn { background: #0f766e; }
 .online-btn:hover { background: #0d9488; }
 .divider { color: var(--text-muted); font-size: 0.85rem; }
-.copyright { color: var(--text-muted); font-size: 0.72rem; opacity: 0.6; letter-spacing: 0.03em; }
+.copyright { color: #7a5c40; font-size: 0.72rem; opacity: 0.8; letter-spacing: 0.03em; }
 
 /* === Portal auth bar === */
 .portal-auth-bar {
@@ -331,7 +328,7 @@ a { touch-action: manipulation; }
   flex-wrap: wrap;
 }
 .portal-username {
-  color: var(--accent-light);
+  color: #1c1107;
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -813,9 +810,9 @@ a { touch-action: manipulation; }
   /* Portal */
   .portal-content { padding: 1.5rem 1rem; gap: 1.5rem; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
   .portal-title { font-size: 2.4rem; }
-  .portal-subtitle { font-size: 0.82rem; }
   .game-grid { grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
-  .game-card { padding: 1rem 0.85rem; gap: 0.5rem; }
+  .game-card { padding: 1rem 0.85rem; gap: 0.5rem; box-shadow: 3px 3px 0 #1c1107; }
+  .game-card--available:hover { box-shadow: 5px 5px 0 #1c1107; }
   .game-card-emoji { font-size: 2rem; }
   .game-card-title { font-size: 0.95rem; }
   .game-card-desc { font-size: 0.72rem; }
@@ -1028,9 +1025,6 @@ a { touch-action: manipulation; }
 .theme-solitaire.home-screen { background: radial-gradient(ellipse at 50% 0%, #001a09 0%, #0d1117 65%); }
 .theme-solitaire.game-screen { background: #071a0b; overflow-y: auto; }
 
-.game-card[data-game="solitaire"]       { border-color: rgba(22, 163, 74, 0.3); }
-.game-card[data-game="solitaire"]:hover { border-color: #16a34a; box-shadow: 0 8px 24px rgba(22, 163, 74, 0.2); }
-.game-card[data-game="solitaire"] .game-card-meta { color: #4ade80; }
 
 /* Card base */
 :root {
