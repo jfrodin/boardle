@@ -1396,6 +1396,7 @@ a { touch-action: manipulation; }
   display: flex;
   gap: 0.65rem;
   justify-content: center;
+  padding-top: 10px; /* reserve space so held dice lift without overflowing */
 }
 .yatzy-die {
   width: 64px;
@@ -1443,6 +1444,12 @@ a { touch-action: manipulation; }
   letter-spacing: 0.1em;
   color: var(--accent-light);
   text-transform: uppercase;
+  height: 0.75rem; /* always reserve space — invisible when not held */
+  visibility: hidden;
+}
+.yatzy-die--held ~ .yatzy-held-label,
+.yatzy-die-wrapper:has(.yatzy-die--held) .yatzy-held-label {
+  visibility: visible;
 }
 .yatzy-die-face {
   position: relative;
@@ -1531,10 +1538,12 @@ a { touch-action: manipulation; }
 }
 .yatzy-scorecard th,
 .yatzy-scorecard td {
-  padding: 0.3rem 0.5rem;
+  padding: 0 0.5rem;
   text-align: center;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   overflow: hidden;
+  height: 2rem;
+  vertical-align: middle;
 }
 .scorecard-label-col { text-align: left; width: 38%; }
 .scorecard-player-col { width: auto; font-size: 0.78rem; color: var(--text-muted); }
@@ -1552,18 +1561,28 @@ a { touch-action: manipulation; }
   text-align: left;
 }
 .scorecard-label { text-align: left; color: var(--text-muted); font-size: 0.82rem; }
-.scorecard-cell { text-align: center; }
-.score-cell { display: inline-block; min-width: 2rem; font-weight: 600; }
+.scorecard-cell { text-align: center; height: 2rem; vertical-align: middle; }
+/* All score cells — same fixed size regardless of type so rows never shift */
+.score-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  height: 1.6rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  padding: 0 0.35rem;
+  box-sizing: border-box;
+}
 .score-cell--scored { color: var(--text); }
 .score-cell--empty { color: rgba(255,255,255,0.12); font-weight: 400; }
 .score-cell--preview {
   background: rgba(37,99,235,0.18);
   color: var(--accent-light);
-  border-radius: 6px;
-  padding: 0.15rem 0.4rem;
   font-weight: 700;
-  font-size: 0.85rem;
-  border: 1px solid rgba(96,165,250,0.35);
+  border-color: rgba(96,165,250,0.35);
   transition: background var(--transition);
   cursor: pointer;
 }
