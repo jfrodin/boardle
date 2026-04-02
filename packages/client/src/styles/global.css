@@ -56,7 +56,7 @@ a { touch-action: manipulation; }
   align-items: flex-start;
 }
 .portal-screen .portal-content {
-  margin: 0 auto;
+  margin: auto;
 }
 .portal-content {
   display: flex;
