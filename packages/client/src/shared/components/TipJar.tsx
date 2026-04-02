@@ -17,20 +17,20 @@ export function TipJar(): React.ReactElement {
             className="tipjar-link"
             onClick={() => setExpanded(false)}
           >
-            ☕ Buy me a coffee
+            🎲 Leave a tip
           </a>
           <button className="tipjar-close" onClick={() => setExpanded(false)} aria-label="Close">✕</button>
         </>
       ) : (
         <div className="tipjar-collapsed">
-          <span className="tipjar-nudge">kept alive by coffee →</span>
+          <span className="tipjar-nudge">free games, no strings →</span>
           <button
             className="tipjar-toggle"
             onClick={() => setExpanded(true)}
             aria-label="Tip jar"
-            title="Support the developer"
+            title="Support the project"
           >
-            ☕
+            🎲
           </button>
         </div>
       )}

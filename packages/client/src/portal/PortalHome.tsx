@@ -124,7 +124,7 @@ export function PortalHome(): React.ReactElement {
         </div>
 
         <footer className="portal-footer">
-          <span className="copyright">© {new Date().getFullYear()} Boardle.se &mdash; made with ☕ by Fredagsprinsen</span>
+          <span className="copyright">© {new Date().getFullYear()} Boardle.se &mdash; made with ♟️ by Fredagsprinsen</span>
           <a
             href="mailto:bugs.boardle@gmail.com?subject=Bug%20report%20%E2%80%94%20Boardle&body=What%20happened%3A%0A%0AWhat%20I%20expected%3A%0A%0ABrowser%2FDevice%3A"
             className="bug-report-link"
