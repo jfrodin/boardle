@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Player, DieValue, CategoryKey } from '../engine.ts';
 import {
   UPPER_CATEGORIES,
@@ -22,9 +22,21 @@ interface ScoreCardProps {
 export function ScoreCard({
   players, currentPlayerIndex, dice, rollsLeft, onScore, gameOver,
 }: ScoreCardProps): React.ReactElement {
+  const [yatzyFlash, setYatzyFlash] = useState(false);
   const canScore = rollsLeft < 3 && !gameOver;
   const currentPlayer = players[currentPlayerIndex];
   const isHumanTurn = currentPlayer?.kind === 'human' && canScore;
+
+  function handleScore(category: CategoryKey): void {
+    if (category === 'yatzy') {
+      const preview = scoreCategory(category, dice);
+      if (preview === 50) {
+        setYatzyFlash(true);
+        setTimeout(() => setYatzyFlash(false), 900);
+      }
+    }
+    onScore(category);
+  }
 
   function renderCell(player: Player, category: CategoryKey, isCurrentPlayer: boolean): React.ReactNode {
     const scored = player.scoreCard[category];
@@ -33,10 +45,11 @@ export function ScoreCard({
     }
     if (isCurrentPlayer && isHumanTurn) {
       const preview = scoreCategory(category, dice);
+      const isYatzy = category === 'yatzy' && preview === 50;
       return (
         <button
-          className="score-cell score-cell--preview"
-          onClick={() => onScore(category)}
+          className={`score-cell score-cell--preview${isYatzy ? ' score-cell--yatzy' : ''}`}
+          onClick={() => handleScore(category)}
           title={`Score ${preview} in ${CATEGORY_LABELS[category]}`}
         >
           {preview > 0 ? preview : <span className="score-cell--zero">0</span>}
@@ -47,7 +60,7 @@ export function ScoreCard({
   }
 
   return (
-    <div className="yatzy-scorecard-wrapper">
+    <div className={`yatzy-scorecard-wrapper${yatzyFlash ? ' yatzy-flash' : ''}`}>
       <table className="yatzy-scorecard">
         <thead>
           <tr>

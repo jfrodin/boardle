@@ -5,6 +5,8 @@ import { DiceArea } from './components/DiceArea.tsx';
 import { ScoreCard } from './components/ScoreCard.tsx';
 import { totalScore } from './engine.ts';
 
+const PLAYER_COLORS = ['#60a5fa', '#f472b6', '#34d399', '#fbbf24'];
+
 export function GameScreen(): React.ReactElement {
   const navigate = useNavigate();
   const gameState = useYatzyStore(s => s.gameState);
@@ -14,6 +16,7 @@ export function GameScreen(): React.ReactElement {
   const scoreCategory = useYatzyStore(s => s.scoreCategory);
   const reset = useYatzyStore(s => s.reset);
   const [rolling, setRolling] = useState(false);
+  const [rollKey, setRollKey] = useState(0);
 
   useEffect(() => {
     if (!gameState) void navigate({ to: '/yatzy' });
@@ -25,11 +28,13 @@ export function GameScreen(): React.ReactElement {
   const currentPlayer = players[currentPlayerIndex];
   const isHumanTurn = currentPlayer?.kind === 'human';
   const canRoll = rollsLeft > 0 && status === 'playing' && isHumanTurn;
+  const playerColor = PLAYER_COLORS[currentPlayerIndex % PLAYER_COLORS.length];
 
   function handleRoll(): void {
     if (!canRoll) return;
     setRolling(true);
-    setTimeout(() => setRolling(false), 350);
+    setRollKey(k => k + 1);
+    setTimeout(() => setRolling(false), 600);
     roll();
   }
 
@@ -38,24 +43,42 @@ export function GameScreen(): React.ReactElement {
     void navigate({ to: '/yatzy' });
   }
 
+  const turnLabel = status !== 'playing'
+    ? 'Game over'
+    : botThinking
+    ? `${currentPlayer.name} is thinking…`
+    : isHumanTurn
+    ? 'Your turn'
+    : `${currentPlayer.name}'s turn`;
+
   return (
     <div className="screen game-screen theme-yatzy">
       <header className="game-header">
         <button className="back-btn" onClick={handleLeave}>← Menu</button>
-        <span className="mode-label">
-          {status === 'playing'
-            ? botThinking
-              ? `${currentPlayer.name} is thinking…`
-              : isHumanTurn ? 'Your turn' : `${currentPlayer.name}'s turn`
-            : 'Game over'}
-        </span>
+        <span className="mode-label">{players.map(p => p.name).join(' · ')}</span>
       </header>
+
+      {/* Turn banner */}
+      {status === 'playing' && (
+        <div className="yatzy-turn-banner" style={{ '--player-color': playerColor } as React.CSSProperties}>
+          <span className="yatzy-turn-dot" />
+          <span className="yatzy-turn-label">{turnLabel}</span>
+          {rollsLeft < 3 && (
+            <span className="yatzy-rolls-pip">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <span key={i} className={`yatzy-roll-pip${i < rollsLeft ? ' yatzy-roll-pip--left' : ' yatzy-roll-pip--used'}`} />
+              ))}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="yatzy-layout">
         <DiceArea
           dice={dice}
           held={held}
           rolling={rolling || botThinking}
+          rollKey={rollKey}
           rollsLeft={rollsLeft}
           canRoll={canRoll}
           isBot={!isHumanTurn || botThinking}
@@ -73,7 +96,6 @@ export function GameScreen(): React.ReactElement {
         />
       </div>
 
-      {/* Game over overlay */}
       {status === 'finished' && winnerIndex !== null && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal game-over-modal result-win">
