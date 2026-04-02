@@ -1361,6 +1361,211 @@ a { touch-action: manipulation; }
   .card--front { padding: 3px; }
 }
 
+/* =====================================================
+   YATZY
+   ===================================================== */
+
+.theme-yatzy {
+  --accent: #2563eb;
+  --accent-light: #60a5fa;
+  --accent-glow: rgba(37, 99, 235, 0.35);
+}
+.theme-yatzy.home-screen { background: radial-gradient(ellipse at 50% 0%, #0a1929 0%, #0b0f1a 65%); }
+.theme-yatzy.game-screen { background: #080d18; overflow-y: auto; }
+
+/* Layout */
+.yatzy-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 700px;
+  padding: 0 1rem 2rem;
+}
+
+/* Dice */
+.yatzy-dice-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+.yatzy-dice-row {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: center;
+}
+.yatzy-die {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid rgba(255,255,255,0.2);
+  position: relative;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+}
+.yatzy-die:not(.yatzy-die--disabled):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+}
+.yatzy-die--held {
+  border-color: var(--accent-light);
+  box-shadow: 0 0 0 2px var(--accent-light), 0 4px 12px var(--accent-glow);
+  transform: translateY(-4px);
+}
+.yatzy-die--rolling {
+  animation: die-roll 350ms ease;
+}
+@keyframes die-roll {
+  0%   { transform: rotate(0deg)   scale(1); }
+  25%  { transform: rotate(-15deg) scale(0.95); }
+  75%  { transform: rotate(15deg)  scale(0.95); }
+  100% { transform: rotate(0deg)   scale(1); }
+}
+.yatzy-die--disabled { cursor: default; opacity: 0.85; }
+.yatzy-die-face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.yatzy-die-dot {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #111;
+  transform: translate(-50%, -50%);
+}
+.yatzy-roll-area { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.yatzy-roll-btn { min-width: 180px; }
+.yatzy-hold-hint { font-size: 0.78rem; color: var(--text-muted); }
+
+/* Scorecard */
+.yatzy-scorecard-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+.yatzy-scorecard {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.yatzy-scorecard th,
+.yatzy-scorecard td {
+  padding: 0.3rem 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.scorecard-label-col { text-align: left; min-width: 130px; }
+.scorecard-player-col { min-width: 72px; font-size: 0.78rem; color: var(--text-muted); }
+.scorecard-player-col--active { color: var(--accent-light); }
+.scorecard-player-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
+.scorecard-bot-tag { font-size: 0.65rem; margin-left: 2px; }
+.scorecard-section-header td {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding-top: 0.65rem;
+  background: rgba(255,255,255,0.02);
+  text-align: left;
+}
+.scorecard-label { text-align: left; color: var(--text-muted); font-size: 0.82rem; }
+.scorecard-cell { text-align: center; }
+.score-cell { display: inline-block; min-width: 2rem; font-weight: 600; }
+.score-cell--scored { color: var(--text); }
+.score-cell--empty { color: rgba(255,255,255,0.12); font-weight: 400; }
+.score-cell--preview {
+  background: rgba(37,99,235,0.18);
+  color: var(--accent-light);
+  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 1px solid rgba(96,165,250,0.35);
+  transition: background var(--transition);
+  cursor: pointer;
+}
+.score-cell--preview:hover { background: rgba(37,99,235,0.35); }
+.score-cell--zero { color: rgba(255,255,255,0.2); font-weight: 400; }
+.score-cell--bonus { color: var(--green); }
+.score-cell--total { color: var(--accent-light); font-size: 1rem; }
+.scorecard-bonus-row td { background: rgba(52,211,153,0.04); }
+.scorecard-total-row td { border-top: 2px solid rgba(255,255,255,0.1); padding-top: 0.5rem; }
+
+/* Final scores */
+.yatzy-final-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+.yatzy-final-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.yatzy-final-row--winner {
+  background: rgba(52,211,153,0.12);
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Home screen player setup */
+.yatzy-player-list { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
+.yatzy-player-row { display: flex; align-items: center; gap: 0.5rem; }
+.yatzy-kind-btn {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--bg-board);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.yatzy-kind-btn.active { border-color: var(--accent-light); background: rgba(37,99,235,0.15); }
+.yatzy-name-input {
+  flex: 1;
+  background: var(--bg-board);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.75rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.yatzy-name-input:focus { border-color: var(--accent-light); }
+.yatzy-remove-btn {
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.yatzy-remove-btn:hover { color: var(--red); background: rgba(248,113,113,0.1); }
+
+@media (max-width: 520px) {
+  .yatzy-die { width: 52px; height: 52px; border-radius: 10px; }
+  .yatzy-die-dot { width: 9px; height: 9px; }
+  .yatzy-scorecard { font-size: 0.78rem; }
+  .scorecard-label-col { min-width: 100px; }
+  .scorecard-player-col { min-width: 56px; }
+}
+
 @media (max-height: 500px) and (orientation: landscape) {
   :root {
     --card-w: 56px;

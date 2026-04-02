@@ -28,7 +28,7 @@ const GAMES: GameCard[] = [
     description: 'Roll five dice and score combinations. Luck meets strategy.',
     players: '1–4 players',
     emoji: '🎲',
-    available: false,
+    available: true,
     path: '/yatzy',
   },
   {

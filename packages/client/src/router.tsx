@@ -19,6 +19,8 @@ import { HomeScreen as CheckersHome } from './games/checkers/HomeScreen.tsx';
 import { GameScreen as CheckersGame } from './games/checkers/GameScreen.tsx';
 import { HomeScreen as SolitaireHome } from './games/solitaire/HomeScreen.tsx';
 import { GameScreen as SolitaireGame } from './games/solitaire/GameScreen.tsx';
+import { HomeScreen as YatzyHome } from './games/yatzy/HomeScreen.tsx';
+import { GameScreen as YatzyGame } from './games/yatzy/GameScreen.tsx';
 import { useCheckersServerMessages } from './games/checkers/hooks/useServerMessages.ts';
 import { useAuthStore } from './shared/store/authStore.ts';
 import { useEffect } from 'react';
@@ -130,6 +132,18 @@ const solitaireGameRoute = createRoute({
   component: SolitaireGame,
 });
 
+const yatzyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/yatzy',
+  component: YatzyHome,
+});
+
+const yatzyGameRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/yatzy/game',
+  component: YatzyGame,
+});
+
 // ---- Router ----
 
 const routeTree = rootRoute.addChildren([
@@ -146,6 +160,8 @@ const routeTree = rootRoute.addChildren([
   checkersGameRoute,
   solitaireRoute,
   solitaireGameRoute,
+  yatzyRoute,
+  yatzyGameRoute,
 ]);
 
 export const router = createRouter({ routeTree });
