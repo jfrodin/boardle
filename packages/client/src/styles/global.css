@@ -288,6 +288,42 @@ a { touch-action: manipulation; }
 }
 .mode-section h2 { font-size: 1.1rem; color: var(--accent-light); }
 .mode-desc { font-size: 0.85rem; color: var(--text-muted); text-align: center; }
+
+/* === How to play === */
+.how-to-play { width: 100%; }
+.how-to-play-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: color var(--transition);
+}
+.how-to-play-toggle:hover { color: var(--text); }
+.how-to-play-toggle-icon { font-size: 0.65rem; transition: transform var(--transition); }
+.how-to-play-toggle-icon--open { transform: rotate(90deg); }
+.how-to-play-body {
+  margin-top: 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid rgba(200, 136, 42, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.1rem;
+}
+.how-to-play-body ol {
+  list-style: decimal;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.how-to-play-body li {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
 .skill-selector { display: flex; gap: 0.5rem; }
 .skill-btn {
   padding: 0.4rem 1rem;

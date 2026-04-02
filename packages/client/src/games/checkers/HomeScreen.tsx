@@ -3,6 +3,15 @@ import { useNavigate, Link } from '@tanstack/react-router';
 import type { AiSkill } from '@boardly/shared';
 import { wsService } from '../../shared/services/wsService.ts';
 import { useAuthStore } from '../../shared/store/authStore.ts';
+import { HowToPlay } from '../../shared/components/HowToPlay.tsx';
+
+const RULES = [
+  'Pieces move diagonally forward one square at a time.',
+  'Capture an opponent\'s piece by jumping over it diagonally — the landing square must be empty.',
+  'If you can capture, you must. Multiple jumps in a single turn are allowed and required.',
+  'Reach the opponent\'s back row to become a King — Kings can move and capture diagonally in any direction.',
+  'Win by capturing all of your opponent\'s pieces or leaving them with no legal moves.',
+];
 
 export function HomeScreen(): React.ReactElement {
   const navigate = useNavigate();
@@ -28,6 +37,7 @@ export function HomeScreen(): React.ReactElement {
       <div className="home-content">
         <Link to="/" className="back-to-portal-btn">← All Games</Link>
         <h1 className="home-title">Checkers</h1>
+        <HowToPlay rules={RULES} />
 
         <section className="mode-section">
           <h2>vs Computer</h2>

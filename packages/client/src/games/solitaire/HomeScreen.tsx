@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { useSolitaireStore } from './store/gameStore.ts';
+import { HowToPlay } from '../../shared/components/HowToPlay.tsx';
+
+const RULES = [
+  'Deal 7 tableau columns (1–7 cards each, top card face-up). Remaining cards form the stock.',
+  'Build tableau columns in descending order, alternating red and black (e.g. black 9 on red 10).',
+  'Click the stock to flip cards to the waste pile. The top waste card is always playable.',
+  'Move cards to the four foundation piles, building each suit from Ace up to King.',
+  'An empty tableau column can only be filled with a King.',
+  'You win when all 52 cards are on the foundations.',
+];
 
 export function HomeScreen(): React.ReactElement {
   const navigate = useNavigate();
@@ -17,6 +27,7 @@ export function HomeScreen(): React.ReactElement {
       <div className="home-content">
         <Link to="/" className="back-to-portal-btn">← All Games</Link>
         <h1 className="home-title">Solitaire</h1>
+        <HowToPlay rules={RULES} />
 
         <section className="mode-section">
           <h2>Draw mode</h2>

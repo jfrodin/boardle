@@ -4,6 +4,16 @@ import type { AiSkill } from '@boardly/shared';
 import { wsService } from '../../shared/services/wsService.ts';
 import { useUiStore } from '../../shared/store/uiStore.ts';
 import { useAuthStore } from '../../shared/store/authStore.ts';
+import { HowToPlay } from '../../shared/components/HowToPlay.tsx';
+
+const RULES = [
+  'The board has 6 pits per player and a store on each end. Each pit starts with 4 stones.',
+  'On your turn, pick any of your pits and sow its stones counter-clockwise, one per pit.',
+  'If the last stone lands in your store, you get another turn.',
+  'If the last stone lands in an empty pit on your side, you capture it and all stones in the opposite pit.',
+  'The game ends when one player has no stones left in their pits.',
+  'The player with the most stones in their store wins.',
+];
 
 const ANIM_DELAY: Record<string, number> = { slow: 800, normal: 400, fast: 150 };
 
@@ -32,6 +42,7 @@ export function HomeScreen(): React.ReactElement {
       <div className="home-content">
         <Link to="/" className="back-to-portal-btn">← All Games</Link>
         <h1 className="home-title">Mancala</h1>
+        <HowToPlay rules={RULES} />
 
         <section className="mode-section">
           <h2>vs Computer</h2>
