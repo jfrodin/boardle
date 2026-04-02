@@ -28,7 +28,6 @@ export function HomeScreen(): React.ReactElement {
       <div className="home-content">
         <Link to="/" className="back-to-portal-btn">← All Games</Link>
         <h1 className="home-title">Checkers</h1>
-        <p className="home-subtitle">English Draughts — jump, capture, and king your pieces</p>
 
         <section className="mode-section">
           <h2>vs Computer</h2>
