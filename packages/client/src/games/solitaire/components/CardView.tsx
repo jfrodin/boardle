@@ -53,6 +53,10 @@ interface Props {
   emptyLabel?: string;
   onClick?: () => void;
   onDoubleClick?: () => void;
+  onDragStart?: React.DragEventHandler<HTMLButtonElement>;
+  onDragEnd?: React.DragEventHandler<HTMLButtonElement>;
+  onDragOver?: React.DragEventHandler<HTMLButtonElement>;
+  onDrop?: React.DragEventHandler<HTMLButtonElement>;
   style?: React.CSSProperties;
   className?: string;
 }
@@ -65,6 +69,10 @@ export function CardView({
   emptyLabel = '',
   onClick,
   onDoubleClick,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
   style,
   className = '',
 }: Props): React.ReactElement {
@@ -74,7 +82,9 @@ export function CardView({
         className={`card card--empty${isTarget ? ' card--empty-target' : ''} ${className}`}
         style={style}
         onClick={onClick}
-        disabled={!onClick}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        disabled={!onClick && !onDragOver}
         aria-label={isTarget ? 'Place card here' : 'Empty slot'}
       >
         {emptyLabel}
@@ -111,8 +121,13 @@ export function CardView({
         className,
       ].filter(Boolean).join(' ')}
       style={style}
+      draggable={!!onDragStart}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       aria-label={`${rank} of ${card.suit}`}
     >
       <div className="card-corner card-corner--tl">

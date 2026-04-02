@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import {
-  type Card,
   type CardSource,
   type CardTarget,
   type Suit,
@@ -27,6 +26,7 @@ interface SolitaireStore {
   clickCard: (src: CardSource) => void;
   clickTarget: (target: CardTarget) => void;
   autoMoveToFoundation: (src: CardSource) => void;
+  directMove: (src: CardSource, target: CardTarget) => void;
   tryAutoComplete: () => void;
   undo: () => void;
   showHint: () => void;
@@ -127,27 +127,40 @@ export const useSolitaireStore = create<SolitaireStore>((set, get) => ({
   autoMoveToFoundation: (src) => {
     const { gameState, history } = get();
     if (!gameState) return;
-    const move = findAutoMoveToFoundation({ ...gameState });
-    if (!move) return;
-    const srcCard = src.area === 'waste'
-      ? gameState.waste[gameState.waste.length - 1]
-      : src.area === 'tableau'
-        ? gameState.tableau[src.col][src.cardIndex]
-        : null;
-    const moveCard = move.src.area === 'waste'
-      ? gameState.waste[gameState.waste.length - 1]
-      : move.src.area === 'tableau'
-        ? gameState.tableau[(move.src as { area: 'tableau'; col: number; cardIndex: number }).col][(move.src as { area: 'tableau'; col: number; cardIndex: number }).cardIndex]
-        : null;
-    if (srcCard && moveCard && srcCard.suit === moveCard.suit && srcCard.rank === moveCard.rank) {
-      set({
-        gameState: applyMove(gameState, move.src, move.target),
-        history: pushHistory(gameState, history),
-        selected: null,
-        validTargets: [],
-        hint: null,
-      });
+
+    // Get the specific card from the given source
+    let card = null;
+    if (src.area === 'waste') {
+      card = gameState.waste[gameState.waste.length - 1] ?? null;
+    } else if (src.area === 'tableau') {
+      card = gameState.tableau[src.col][src.cardIndex] ?? null;
     }
+    if (!card?.faceUp) return;
+
+    // Try to move directly to this card's foundation pile
+    const target: CardTarget = { area: 'foundation', suit: card.suit };
+    if (!isValidMove(gameState, src, target)) return;
+
+    set({
+      gameState: applyMove(gameState, src, target),
+      history: pushHistory(gameState, history),
+      selected: null,
+      validTargets: [],
+      hint: null,
+    });
+  },
+
+  directMove: (src, target) => {
+    const { gameState, history } = get();
+    if (!gameState) return;
+    if (!isValidMove(gameState, src, target)) return;
+    set({
+      gameState: applyMove(gameState, src, target),
+      history: pushHistory(gameState, history),
+      selected: null,
+      validTargets: [],
+      hint: null,
+    });
   },
 
   tryAutoComplete: () => {

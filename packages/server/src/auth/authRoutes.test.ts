@@ -13,38 +13,54 @@ function makeApp(): FastifyInstance {
   });
 }
 
+/** Extract the auth_token value from the Set-Cookie header */
+function extractCookie(setCookieHeader: string | string[] | undefined): string | null {
+  const header = Array.isArray(setCookieHeader) ? setCookieHeader[0] : setCookieHeader;
+  if (!header) return null;
+  const match = header.match(/auth_token=([^;]+)/);
+  return match ? match[1] : null;
+}
+
 async function register(
   app: FastifyInstance,
   body: object,
-): Promise<{ status: number; body: Record<string, unknown> }> {
+): Promise<{ status: number; body: Record<string, unknown>; cookie: string | null }> {
   const res = await app.inject({
     method: 'POST',
     url: '/auth/register',
     payload: body,
   });
-  return { status: res.statusCode, body: res.json() };
+  return {
+    status: res.statusCode,
+    body: res.json(),
+    cookie: extractCookie(res.headers['set-cookie']),
+  };
 }
 
 async function login(
   app: FastifyInstance,
   body: object,
-): Promise<{ status: number; body: Record<string, unknown> }> {
+): Promise<{ status: number; body: Record<string, unknown>; cookie: string | null }> {
   const res = await app.inject({
     method: 'POST',
     url: '/auth/login',
     payload: body,
   });
-  return { status: res.statusCode, body: res.json() };
+  return {
+    status: res.statusCode,
+    body: res.json(),
+    cookie: extractCookie(res.headers['set-cookie']),
+  };
 }
 
 async function me(
   app: FastifyInstance,
-  token: string,
+  cookie: string,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const res = await app.inject({
     method: 'GET',
     url: '/auth/me',
-    headers: { authorization: `Bearer ${token}` },
+    headers: { cookie: `auth_token=${cookie}` },
   });
   return { status: res.statusCode, body: res.json() };
 }
@@ -56,17 +72,18 @@ describe('POST /auth/register', () => {
   beforeEach(async () => { app = makeApp(); await app.ready(); });
   afterEach(async () => { await app.close(); });
 
-  it('creates a user and returns token + user', async () => {
-    const { status, body } = await register(app, {
+  it('creates a user, sets auth cookie, and returns user', async () => {
+    const { status, body, cookie } = await register(app, {
       username: 'alice',
       email: 'alice@example.com',
       password: 'password123',
     });
     expect(status).toBe(201);
-    expect(typeof body.token).toBe('string');
+    expect(typeof cookie).toBe('string');
     expect((body.user as Record<string, unknown>).username).toBe('alice');
     expect((body.user as Record<string, unknown>).email).toBe('alice@example.com');
     expect((body.user as Record<string, unknown>).passwordHash).toBeUndefined();
+    expect(body.token).toBeUndefined(); // token must NOT be in response body
   });
 
   it('normalises email to lowercase', async () => {
@@ -131,16 +148,16 @@ describe('POST /auth/login', () => {
   beforeEach(async () => {
     app = makeApp();
     await app.ready();
-    // Seed one user
     await register(app, { username: 'testuser', email: 'test@example.com', password: 'correctpassword' });
   });
   afterEach(async () => { await app.close(); });
 
-  it('returns token on correct credentials', async () => {
-    const { status, body } = await login(app, { email: 'test@example.com', password: 'correctpassword' });
+  it('sets auth cookie and returns user on correct credentials', async () => {
+    const { status, body, cookie } = await login(app, { email: 'test@example.com', password: 'correctpassword' });
     expect(status).toBe(200);
-    expect(typeof body.token).toBe('string');
+    expect(typeof cookie).toBe('string');
     expect((body.user as Record<string, unknown>).username).toBe('testuser');
+    expect(body.token).toBeUndefined(); // token must NOT be in response body
   });
 
   it('is case-insensitive for email', async () => {
@@ -174,42 +191,61 @@ describe('POST /auth/login', () => {
 
 describe('GET /auth/me', () => {
   let app: FastifyInstance;
-  let token: string;
+  let cookie: string;
 
   beforeEach(async () => {
     app = makeApp();
     await app.ready();
-    const { body } = await register(app, {
+    const { cookie: c } = await register(app, {
       username: 'meuser',
       email: 'me@example.com',
       password: 'password123',
     });
-    token = body.token as string;
+    cookie = c!;
   });
   afterEach(async () => { await app.close(); });
 
-  it('returns user for valid token', async () => {
-    const { status, body } = await me(app, token);
+  it('returns user for valid cookie', async () => {
+    const { status, body } = await me(app, cookie);
     expect(status).toBe(200);
     expect((body.user as Record<string, unknown>).username).toBe('meuser');
   });
 
-  it('rejects missing token', async () => {
+  it('rejects missing cookie', async () => {
     const res = await app.inject({ method: 'GET', url: '/auth/me' });
     expect(res.statusCode).toBe(401);
   });
 
-  it('rejects tampered token', async () => {
-    const { status } = await me(app, token + 'tampered');
+  it('rejects tampered cookie', async () => {
+    const { status } = await me(app, cookie + 'tampered');
     expect(status).toBe(401);
   });
 
   it('rejects token signed with wrong secret', async () => {
     const otherApp = buildApp({ dbPath: ':memory:', jwtSecret: 'completely-different-secret-32chars!', corsOrigin: '*', silent: true });
     await otherApp.ready();
-    const { body: otherBody } = await register(otherApp, { username: 'x', email: 'x@x.com', password: 'password123' });
+    const { cookie: otherCookie } = await register(otherApp, { username: 'x', email: 'x@x.com', password: 'password123' });
     await otherApp.close();
-    const { status } = await me(app, otherBody.token as string);
+    const { status } = await me(app, otherCookie!);
     expect(status).toBe(401);
+  });
+});
+
+describe('POST /auth/logout', () => {
+  let app: FastifyInstance;
+
+  beforeEach(async () => {
+    app = makeApp();
+    await app.ready();
+  });
+  afterEach(async () => { await app.close(); });
+
+  it('clears the auth cookie', async () => {
+    const res = await app.inject({ method: 'POST', url: '/auth/logout' });
+    expect(res.statusCode).toBe(200);
+    const setCookie = res.headers['set-cookie'] as string | undefined;
+    expect(setCookie).toBeDefined();
+    // Cookie should be cleared (max-age=0 or expires in the past)
+    expect(setCookie).toMatch(/auth_token=;|Max-Age=0/i);
   });
 });

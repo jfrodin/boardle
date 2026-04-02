@@ -26,8 +26,19 @@ const MIN_ANIM_DELAY = 0;
 const MAX_ANIM_DELAY = 2000;
 
 export function registerWsRoutes(fastify: FastifyInstance): void {
-  fastify.get('/ws', { websocket: true }, (socket, _req) => {
-    wsUserMap.set(socket, null);
+  fastify.get('/ws', { websocket: true }, (socket, req) => {
+    // Try to auto-authenticate from the HttpOnly cookie sent with the upgrade request
+    const cookieToken = (req.cookies as Record<string, string> | undefined)?.auth_token;
+    if (cookieToken) {
+      try {
+        const payload = fastify.jwt.verify<AuthUser>(cookieToken);
+        wsUserMap.set(socket, { userId: payload.userId, username: payload.username });
+      } catch {
+        wsUserMap.set(socket, null);
+      }
+    } else {
+      wsUserMap.set(socket, null);
+    }
 
     socket.on('message', (raw: Buffer | string) => {
       // Size limit

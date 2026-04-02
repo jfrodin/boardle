@@ -62,6 +62,7 @@ function Confetti(): React.ReactElement {
 
 export function SolitaireBoard(): React.ReactElement {
   const { cardW, cardH, faceDownOffset, faceUpOffset, gap } = useCardDimensions();
+  const [dragSrc, setDragSrc] = React.useState<CardSource | null>(null);
 
   const gameState = useSolitaireStore(s => s.gameState);
   const selected = useSolitaireStore(s => s.selected);
@@ -72,7 +73,27 @@ export function SolitaireBoard(): React.ReactElement {
   const clickCard = useSolitaireStore(s => s.clickCard);
   const clickTarget = useSolitaireStore(s => s.clickTarget);
   const autoMoveToFoundation = useSolitaireStore(s => s.autoMoveToFoundation);
+  const directMove = useSolitaireStore(s => s.directMove);
   const tryAutoComplete = useSolitaireStore(s => s.tryAutoComplete);
+
+  function handleDragStart(src: CardSource) {
+    setDragSrc(src);
+  }
+
+  function handleDragEnd() {
+    setDragSrc(null);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+  }
+
+  function handleDrop(target: CardTarget) {
+    if (dragSrc) {
+      directMove(dragSrc, target);
+      setDragSrc(null);
+    }
+  }
 
   if (!gameState) return <></>;
 
@@ -110,6 +131,8 @@ export function SolitaireBoard(): React.ReactElement {
             className={wasteHint ? 'card--hint' : ''}
             onClick={() => clickCard(wasteSrc)}
             onDoubleClick={() => autoMoveToFoundation(wasteSrc)}
+            onDragStart={() => handleDragStart(wasteSrc)}
+            onDragEnd={handleDragEnd}
           />
         ) : (
           <CardView isEmpty />
@@ -129,6 +152,10 @@ export function SolitaireBoard(): React.ReactElement {
               card={top}
               isTarget={isTarget}
               onClick={() => selected ? clickTarget({ area: 'foundation', suit }) : clickCard(src)}
+              onDragStart={() => handleDragStart(src)}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop({ area: 'foundation', suit })}
             />
           ) : (
             <CardView
@@ -137,6 +164,8 @@ export function SolitaireBoard(): React.ReactElement {
               emptyLabel={suitSymbol(suit)}
               isTarget={isTarget}
               onClick={() => selected && clickTarget({ area: 'foundation', suit })}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop({ area: 'foundation', suit })}
             />
           );
         })}
@@ -152,6 +181,8 @@ export function SolitaireBoard(): React.ReactElement {
               key={colIdx}
               className="tableau-col"
               style={{ height: `${height}px` }}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop({ area: 'tableau', col: colIdx })}
             >
               {col.length === 0 ? (
                 <CardView
@@ -167,6 +198,9 @@ export function SolitaireBoard(): React.ReactElement {
                     selected.col === colIdx &&
                     cardIdx >= selected.cardIndex;
                   const isCardHint = isHintSrc(hint, src);
+                  const isDragging = dragSrc?.area === 'tableau' &&
+                    (dragSrc as { area: 'tableau'; col: number; cardIndex: number }).col === colIdx &&
+                    cardIdx >= (dragSrc as { area: 'tableau'; col: number; cardIndex: number }).cardIndex;
                   return (
                     <CardView
                       key={`${card.suit}${card.rank}`}
@@ -174,13 +208,15 @@ export function SolitaireBoard(): React.ReactElement {
                       isSelected={isStackSelected}
                       isTarget={isColTarget && cardIdx === col.length - 1}
                       style={{ top: `${getCardTop(col, cardIdx, faceDownOffset, faceUpOffset)}px` }}
-                      className={`tableau-card${isCardHint ? ' card--hint' : ''}`}
+                      className={`tableau-card${isCardHint ? ' card--hint' : ''}${isDragging ? ' card--dragging' : ''}`}
                       onClick={() => card.faceUp ? clickCard(src) : undefined}
                       onDoubleClick={() =>
                         card.faceUp && cardIdx === col.length - 1
                           ? autoMoveToFoundation(src)
                           : undefined
                       }
+                      onDragStart={card.faceUp ? () => handleDragStart(src) : undefined}
+                      onDragEnd={card.faceUp ? handleDragEnd : undefined}
                     />
                   );
                 })

@@ -29,13 +29,17 @@ import { useEffect } from 'react';
 // Always mounted — the right place for global hooks.
 
 function RootLayout(): React.ReactElement {
-  // Rehydrate auth token from localStorage on first render
   const init = useAuthStore(s => s.init);
-  useEffect(() => { init(); }, [init]);
+  const initialized = useAuthStore(s => s.initialized);
+
+  useEffect(() => { void init(); }, [init]);
 
   // WS message handlers must live here so they stay mounted across all routes
   useServerMessages();
   useCheckersServerMessages();
+
+  // Wait for /auth/me to resolve before rendering — prevents flash of logged-out state
+  if (!initialized) return <></>;
 
   return (
     <div className="app">

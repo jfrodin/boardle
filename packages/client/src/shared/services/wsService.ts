@@ -1,7 +1,6 @@
 import type { ClientMessage, ServerMessage } from '@boardly/shared';
 import { useGameStore } from '../../games/kalaha/store/gameStore.ts';
 import { useUiStore } from '../store/uiStore.ts';
-import { useAuthStore } from '../store/authStore.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,12 +33,7 @@ class WsService {
 
     this.ws.onopen = () => {
       console.log('[WS] connected');
-
-      // Send auth token as first message — never in URL to avoid log leakage
-      const token = useAuthStore.getState().token;
-      if (token) {
-        this.ws!.send(JSON.stringify({ type: 'AUTH', token }));
-      }
+      // Auth is handled automatically via the HttpOnly cookie sent with the upgrade request.
 
       // Try to restore an active session (Kalaha or Checkers)
       const kalahaStored = useGameStore.getState();

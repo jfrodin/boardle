@@ -8,28 +8,27 @@ export interface AuthUser {
 
 interface AuthState {
   user: AuthUser | null;
-  token: string | null;
+  initialized: boolean; // true once /auth/me has resolved on app start
   isLoading: boolean;
   error: string | null;
 
-  /** Call on app start to rehydrate from localStorage */
-  init: () => void;
+  /** Call on app start to restore session from HttpOnly cookie via /auth/me */
+  init: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   clearError: () => void;
 }
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'auth_user';
-
-async function apiFetch<T>(path: string, body: object): Promise<T> {
+// All requests include credentials so the HttpOnly cookie is sent automatically
+async function apiFetch<T>(path: string, body?: object): Promise<T> {
   const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    method: body !== undefined ? 'POST' : 'GET',
+    headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    credentials: 'include',
   });
 
   const data = await res.json() as Record<string, unknown>;
@@ -42,38 +41,32 @@ async function apiFetch<T>(path: string, body: object): Promise<T> {
 }
 
 interface AuthResponse {
-  token: string;
   user: AuthUser;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: null,
+  initialized: false,
   isLoading: false,
   error: null,
 
-  init() {
+  async init() {
+    // Restore session by calling /auth/me — the HttpOnly cookie is sent automatically.
+    // No token stored in JS memory or localStorage.
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
-      const raw = localStorage.getItem(USER_KEY);
-      if (token && raw) {
-        const user = JSON.parse(raw) as AuthUser;
-        set({ token, user });
-      }
+      const { user } = await apiFetch<AuthResponse>('/auth/me');
+      set({ user, initialized: true });
     } catch {
-      // Corrupt storage — start fresh
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
+      // No valid session — user is just not logged in
+      set({ user: null, initialized: true });
     }
   },
 
   async login(email, password) {
     set({ isLoading: true, error: null });
     try {
-      const { token, user } = await apiFetch<AuthResponse>('/auth/login', { email, password });
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-      set({ token, user, isLoading: false });
+      const { user } = await apiFetch<AuthResponse>('/auth/login', { email, password });
+      set({ user, isLoading: false });
     } catch (err) {
       set({ isLoading: false, error: (err as Error).message });
       throw err;
@@ -83,10 +76,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   async register(username, email, password) {
     set({ isLoading: true, error: null });
     try {
-      const { token, user } = await apiFetch<AuthResponse>('/auth/register', { username, email, password });
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-      set({ token, user, isLoading: false });
+      const { user } = await apiFetch<AuthResponse>('/auth/register', { username, email, password });
+      set({ user, isLoading: false });
     } catch (err) {
       set({ isLoading: false, error: (err as Error).message });
       throw err;
@@ -107,20 +98,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   async resetPassword(token, password) {
     set({ isLoading: true, error: null });
     try {
-      const { token: jwt, user } = await apiFetch<AuthResponse>('/auth/reset-password', { token, password });
-      localStorage.setItem(TOKEN_KEY, jwt);
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-      set({ token: jwt, user, isLoading: false });
+      const { user } = await apiFetch<AuthResponse>('/auth/reset-password', { token, password });
+      set({ user, isLoading: false });
     } catch (err) {
       set({ isLoading: false, error: (err as Error).message });
       throw err;
     }
   },
 
-  logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    set({ user: null, token: null, error: null });
+  async logout() {
+    try {
+      await apiFetch<{ ok: boolean }>('/auth/logout', {});
+    } catch {
+      // Best-effort — clear local state regardless
+    }
+    set({ user: null, error: null });
   },
 
   clearError() {

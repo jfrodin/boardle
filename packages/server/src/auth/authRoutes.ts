@@ -3,7 +3,7 @@ import { eq, or, lt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { Resend } from 'resend';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Db } from '../db/index.js';
 import { users, passwordResetTokens } from '../db/schema.js';
 
@@ -45,6 +45,7 @@ const resetPasswordSchema = z.object({
 // ---- Helpers ----
 
 const BCRYPT_ROUNDS = 12;
+const COOKIE_NAME = 'auth_token';
 
 interface JwtPayload {
   userId: string;
@@ -53,6 +54,21 @@ interface JwtPayload {
 
 function issueToken(fastify: FastifyInstance, payload: JwtPayload): string {
   return fastify.jwt.sign(payload, { expiresIn: '7d' });
+}
+
+function setAuthCookie(reply: FastifyReply, token: string): void {
+  const isProd = process.env.NODE_ENV === 'production';
+  void reply.setCookie(COOKIE_NAME, token, {
+    httpOnly: true,       // not accessible from JS — prevents XSS token theft
+    secure: isProd,       // HTTPS only in production
+    sameSite: 'strict',   // prevents CSRF
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+  });
+}
+
+function clearAuthCookie(reply: FastifyReply): void {
+  void reply.clearCookie(COOKIE_NAME, { path: '/' });
 }
 
 // ---- Route registration ----
@@ -74,7 +90,6 @@ export function registerAuthRoutes(fastify: FastifyInstance, db: Db): void {
     const { username, email, password } = result.data;
     const normalizedEmail = email.toLowerCase();
 
-    // Check uniqueness — check both in one query to avoid timing differences
     const existing = await db
       .select({ id: users.id, email: users.email, username: users.username })
       .from(users)
@@ -95,7 +110,6 @@ export function registerAuthRoutes(fastify: FastifyInstance, db: Db): void {
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
     const newUser = {
       id: randomUUID(),
       username,
@@ -107,9 +121,9 @@ export function registerAuthRoutes(fastify: FastifyInstance, db: Db): void {
     await db.insert(users).values(newUser);
 
     const token = issueToken(fastify, { userId: newUser.id, username });
+    setAuthCookie(reply, token);
 
     return reply.status(201).send({
-      token,
       user: { id: newUser.id, username, email: normalizedEmail },
     });
   });
@@ -146,11 +160,17 @@ export function registerAuthRoutes(fastify: FastifyInstance, db: Db): void {
     }
 
     const token = issueToken(fastify, { userId: user.id, username: user.username });
+    setAuthCookie(reply, token);
 
     return reply.send({
-      token,
       user: { id: user.id, username: user.username, email: user.email },
     });
+  });
+
+  // POST /auth/logout
+  fastify.post('/auth/logout', async (_req, reply) => {
+    clearAuthCookie(reply);
+    return reply.send({ ok: true });
   });
 
   // POST /auth/forgot-password
@@ -169,9 +189,7 @@ export function registerAuthRoutes(fastify: FastifyInstance, db: Db): void {
     const [user] = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.email, normalizedEmail));
     if (!user) return reply.send({ ok: true });
 
-    // Delete any existing tokens for this user, then create a new one
     await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, user.id));
-    // Also clean up any globally expired tokens
     await db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, new Date()));
 
     const token = randomBytes(32).toString('hex');
@@ -197,7 +215,6 @@ export function registerAuthRoutes(fastify: FastifyInstance, db: Db): void {
         `,
       });
     } else {
-      // Dev fallback — log the link
       console.log(`[DEV] Password reset link: ${resetLink}`);
     }
 
@@ -228,10 +245,12 @@ export function registerAuthRoutes(fastify: FastifyInstance, db: Db): void {
     if (!user) return reply.status(404).send({ error: 'NOT_FOUND', message: 'User not found' });
 
     const newToken = issueToken(fastify, { userId: user.id, username: user.username });
-    return reply.send({ token: newToken, user });
+    setAuthCookie(reply, newToken);
+
+    return reply.send({ user });
   });
 
-  // GET /auth/me — requires valid JWT
+  // GET /auth/me — reads JWT from HttpOnly cookie automatically
   fastify.get('/auth/me', async (req, reply) => {
     let payload: JwtPayload;
     try {
