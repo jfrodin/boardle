@@ -6,6 +6,7 @@ import { CardView } from './CardView.tsx';
 import { useCardDimensions } from '../hooks/useCardDimensions.ts';
 
 const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
+const CONFETTI_COLORS = ['#f87171','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6','#fb923c'];
 
 function getCardTop(col: { faceUp: boolean }[], index: number, fdOff: number, fuOff: number): number {
   let top = 0;
@@ -28,12 +29,44 @@ function isTargetFoundation(targets: CardTarget[], suit: Suit): boolean {
   return targets.some(t => t.area === 'foundation' && t.suit === suit);
 }
 
+function isHintSrc(hint: { src: CardSource; target: CardTarget } | null, src: CardSource): boolean {
+  if (!hint) return false;
+  if (hint.src.area !== src.area) return false;
+  if (src.area === 'waste') return hint.src.area === 'waste';
+  if (src.area === 'tableau' && hint.src.area === 'tableau')
+    return src.col === hint.src.col && src.cardIndex === hint.src.cardIndex;
+  return false;
+}
+
+function Confetti(): React.ReactElement {
+  const pieces = React.useMemo(() =>
+    Array.from({ length: 36 }, (_, i) => ({
+      id: i,
+      style: {
+        '--confetti-color': CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        left: `${(i * 2.78) % 100}%`,
+        animationDelay: `${(i * 0.06) % 1.2}s`,
+        animationDuration: `${1.3 + (i * 0.07) % 0.9}s`,
+        width: `${7 + (i * 3) % 7}px`,
+        height: `${5 + (i * 2) % 6}px`,
+      } as React.CSSProperties,
+    }))
+  , []);
+
+  return (
+    <div className="confetti-container" aria-hidden="true">
+      {pieces.map(p => <div key={p.id} className="confetti-piece" style={p.style} />)}
+    </div>
+  );
+}
+
 export function SolitaireBoard(): React.ReactElement {
   const { cardW, cardH, faceDownOffset, faceUpOffset, gap } = useCardDimensions();
 
   const gameState = useSolitaireStore(s => s.gameState);
   const selected = useSolitaireStore(s => s.selected);
   const validTargets = useSolitaireStore(s => s.validTargets);
+  const hint = useSolitaireStore(s => s.hint);
   const newGame = useSolitaireStore(s => s.newGame);
   const clickStock = useSolitaireStore(s => s.clickStock);
   const clickCard = useSolitaireStore(s => s.clickCard);
@@ -47,6 +80,7 @@ export function SolitaireBoard(): React.ReactElement {
   const wasteSrc: CardSource = { area: 'waste' };
   const wasteTop = waste[waste.length - 1] ?? null;
   const wasteSelected = selected?.area === 'waste';
+  const wasteHint = isHintSrc(hint, { area: 'waste' });
 
   const wrapperStyle = {
     '--card-w': `${cardW}px`,
@@ -73,6 +107,7 @@ export function SolitaireBoard(): React.ReactElement {
             card={wasteTop}
             isSelected={wasteSelected}
             isTarget={false}
+            className={wasteHint ? 'card--hint' : ''}
             onClick={() => clickCard(wasteSrc)}
             onDoubleClick={() => autoMoveToFoundation(wasteSrc)}
           />
@@ -131,6 +166,7 @@ export function SolitaireBoard(): React.ReactElement {
                     selected?.area === 'tableau' &&
                     selected.col === colIdx &&
                     cardIdx >= selected.cardIndex;
+                  const isCardHint = isHintSrc(hint, src);
                   return (
                     <CardView
                       key={`${card.suit}${card.rank}`}
@@ -138,7 +174,7 @@ export function SolitaireBoard(): React.ReactElement {
                       isSelected={isStackSelected}
                       isTarget={isColTarget && cardIdx === col.length - 1}
                       style={{ top: `${getCardTop(col, cardIdx, faceDownOffset, faceUpOffset)}px` }}
-                      className="tableau-card"
+                      className={`tableau-card${isCardHint ? ' card--hint' : ''}`}
                       onClick={() => card.faceUp ? clickCard(src) : undefined}
                       onDoubleClick={() =>
                         card.faceUp && cardIdx === col.length - 1
@@ -163,13 +199,19 @@ export function SolitaireBoard(): React.ReactElement {
 
       {/* Win overlay */}
       {status === 'won' && (
-        <div className="solitaire-win-overlay">
-          <h2>You win!</h2>
-          <p>{moves} moves</p>
-          <button className="primary-btn" onClick={() => newGame(gameState.drawMode)}>
-            Play again
-          </button>
-        </div>
+        <>
+          <Confetti />
+          <div className="solitaire-win-overlay">
+            <div className="solitaire-win-content">
+              <div className="modal-emoji">🏆</div>
+              <h2>You win!</h2>
+              <p>{moves} moves</p>
+              <button className="primary-btn" onClick={() => newGame(gameState.drawMode)}>
+                Play again
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

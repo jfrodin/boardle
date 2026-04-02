@@ -251,3 +251,23 @@ export function canAutoComplete(state: SolitaireState): boolean {
   if (state.stock.length > 0 || state.waste.length > 0) return false;
   return state.tableau.every(col => col.every(c => c.faceUp));
 }
+
+export function findHint(state: SolitaireState): { src: CardSource; target: CardTarget } | null {
+  // Waste → anywhere
+  if (state.waste.length > 0) {
+    const src: CardSource = { area: 'waste' };
+    const targets = getValidTargets(state, src);
+    if (targets.length > 0) return { src, target: targets[0] };
+  }
+  // Tableau → anywhere (top face-up card of each column first)
+  for (let col = 0; col < 7; col++) {
+    const pile = state.tableau[col];
+    for (let cardIndex = pile.length - 1; cardIndex >= 0; cardIndex--) {
+      if (!pile[cardIndex].faceUp) break;
+      const src: CardSource = { area: 'tableau', col, cardIndex };
+      const targets = getValidTargets(state, src);
+      if (targets.length > 0) return { src, target: targets[0] };
+    }
+  }
+  return null;
+}

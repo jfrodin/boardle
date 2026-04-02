@@ -45,9 +45,12 @@ export function GameOverModal({ state, playerSide }: GameOverModalProps): React.
     void router.navigate({ to: '/' });
   }
 
+  const emoji = winner === 'DRAW' ? '🤝' : winner === playerSide ? '🏆' : '💀';
+
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Game over">
       <div className={`modal game-over-modal result-${resultClass}`}>
+        <div className="modal-emoji">{emoji}</div>
         <h2 className="modal-title">{resultText}</h2>
         <div className="score-display">
           <div className="score-item">
