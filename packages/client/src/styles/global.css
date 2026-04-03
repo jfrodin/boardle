@@ -946,8 +946,9 @@ a { touch-action: manipulation; }
   .auth-title { font-size: 1.6rem; }
 }
 
-/* Hide tip jar on mobile when in-game to avoid covering the board */
+/* On mobile: hide nudge text (just show the button), hide entirely in-game */
 @media (max-width: 520px) {
+  .tipjar-nudge { display: none; }
   .game-screen ~ .tipjar,
   .game-screen + .tipjar { display: none; }
 }

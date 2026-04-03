@@ -39,10 +39,11 @@ export function GameOverModal({ state, playerSide }: GameOverModalProps): React.
 
   function handleHome(): void {
     wsService.send({ type: 'LEAVE_ROOM' });
-    reset();
     sessionStorage.removeItem('kalahaRoomId');
     sessionStorage.removeItem('kalahaSide');
-    void router.navigate({ to: '/' });
+    // Navigate first — then reset so the GameScreen useEffect doesn't
+    // race and redirect to /kalaha before we reach /.
+    void router.navigate({ to: '/' }).then(() => reset());
   }
 
   const emoji = winner === 'DRAW' ? '🤝' : winner === playerSide ? '🏆' : '💀';

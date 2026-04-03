@@ -70,6 +70,12 @@ export function useCheckersServerMessages(): void {
 
         case 'ERROR':
           console.warn('[Checkers WS error]', msg.code, msg.message);
+          if (msg.code === 'ROOM_NOT_FOUND' || msg.code === 'RECONNECT_FAILED') {
+            sessionStorage.removeItem('checkersRoomId');
+            sessionStorage.removeItem('checkersSide');
+            useCheckersStore.getState().reset();
+            void router.navigate({ to: '/' });
+          }
           break;
       }
     });

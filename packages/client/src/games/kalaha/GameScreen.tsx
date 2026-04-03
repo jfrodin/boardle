@@ -26,10 +26,9 @@ export function GameScreen(): React.ReactElement {
 
   function handleLeave(): void {
     wsService.send({ type: 'LEAVE_ROOM' });
-    reset();
     sessionStorage.removeItem('kalahaRoomId');
     sessionStorage.removeItem('kalahaSide');
-    void navigate({ to: '/' });
+    void navigate({ to: '/' }).then(() => reset());
   }
 
   const modeLabel = mode === 'ai'

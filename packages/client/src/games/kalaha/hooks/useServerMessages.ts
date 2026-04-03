@@ -70,6 +70,13 @@ export function useServerMessages(): void {
 
         case 'ERROR':
           console.error(`[Server Error] ${msg.code}: ${msg.message}`);
+          // If room is gone (server restart, expiry, mobile reconnect) — clean up and go home
+          if (msg.code === 'ROOM_NOT_FOUND' || msg.code === 'RECONNECT_FAILED') {
+            sessionStorage.removeItem('kalahaRoomId');
+            sessionStorage.removeItem('kalahaSide');
+            useGameStore.getState().reset();
+            void router.navigate({ to: '/' });
+          }
           break;
       }
     });
