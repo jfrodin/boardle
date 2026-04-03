@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
 import type { PlayerKind } from './engine.ts';
-import { useYatzyStore } from './store/gameStore.ts';
+import { useYatzyStore, type BotSpeed } from './store/gameStore.ts';
 import { HowToPlay } from '../../shared/components/HowToPlay.tsx';
+
+const SPEED_OPTIONS: { value: BotSpeed; label: string; hint: string }[] = [
+  { value: 'fast',   label: 'Fast',   hint: 'Skip the wait' },
+  { value: 'normal', label: 'Normal', hint: 'Balanced pace' },
+  { value: 'slow',   label: 'Slow',   hint: 'Follow every move' },
+];
 
 const RULES = [
   'Each turn you get up to 3 rolls. After the first roll, hold any dice you want to keep.',
@@ -27,6 +33,8 @@ const BOT_NAMES = ['Bot Alex', 'Bot Sam', 'Bot Jordan'];
 export function HomeScreen(): React.ReactElement {
   const navigate = useNavigate();
   const startGame = useYatzyStore(s => s.startGame);
+  const botSpeed = useYatzyStore(s => s.botSpeed);
+  const setBotSpeed = useYatzyStore(s => s.setBotSpeed);
 
   const [players, setPlayers] = useState<PlayerSetup[]>([
     { name: 'You', kind: 'human' },
@@ -106,6 +114,27 @@ export function HomeScreen(): React.ReactElement {
               + Add player
             </button>
           )}
+        </section>
+
+        {players.some(p => p.kind === 'bot') && (
+          <section className="mode-section">
+            <h2>Bot speed</h2>
+            <div className="yatzy-speed-selector">
+              {SPEED_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  className={`yatzy-speed-btn${botSpeed === opt.value ? ' active' : ''}`}
+                  onClick={() => setBotSpeed(opt.value)}
+                  title={opt.hint}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="mode-section">
           <button className="primary-btn" onClick={play}>
             Play
           </button>

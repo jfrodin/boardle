@@ -1657,6 +1657,21 @@ a { touch-action: manipulation; }
 }
 .yatzy-remove-btn:hover { color: var(--red); background: rgba(248,113,113,0.1); }
 
+.yatzy-speed-selector { display: flex; gap: 0.5rem; width: 100%; }
+.yatzy-speed-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.yatzy-speed-btn:hover { border-color: var(--accent-light); color: var(--text); }
+.yatzy-speed-btn.active { border-color: var(--accent-light); background: var(--accent-muted); color: var(--text); font-weight: 600; }
+
 @media (max-width: 520px) {
   .yatzy-die { width: 52px; height: 52px; border-radius: 10px; }
   .yatzy-die-dot { width: 9px; height: 9px; }
