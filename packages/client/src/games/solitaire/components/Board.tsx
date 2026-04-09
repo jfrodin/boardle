@@ -63,6 +63,7 @@ function Confetti(): React.ReactElement {
 export function SolitaireBoard(): React.ReactElement {
   const { cardW, cardH, faceDownOffset, faceUpOffset, gap } = useCardDimensions();
   const [dragSrc, setDragSrc] = React.useState<CardSource | null>(null);
+  const [hideSrc, setHideSrc] = React.useState<CardSource | null>(null);
 
   const gameState = useSolitaireStore(s => s.gameState);
   const selected = useSolitaireStore(s => s.selected);
@@ -78,10 +79,13 @@ export function SolitaireBoard(): React.ReactElement {
 
   function handleDragStart(src: CardSource) {
     setDragSrc(src);
+    // Delay hiding until after the browser captures the drag ghost image
+    setTimeout(() => setHideSrc(src), 0);
   }
 
   function handleDragEnd() {
     setDragSrc(null);
+    setHideSrc(null);
   }
 
   function handleDragOver(e: React.DragEvent) {
@@ -128,7 +132,7 @@ export function SolitaireBoard(): React.ReactElement {
             card={wasteTop}
             isSelected={wasteSelected}
             isTarget={false}
-            className={wasteHint ? 'card--hint' : ''}
+            className={[wasteHint ? 'card--hint' : '', hideSrc?.area === 'waste' ? 'card--dragging' : ''].filter(Boolean).join(' ')}
             onClick={() => clickCard(wasteSrc)}
             onDoubleClick={() => autoMoveToFoundation(wasteSrc)}
             onDragStart={() => handleDragStart(wasteSrc)}
@@ -146,11 +150,13 @@ export function SolitaireBoard(): React.ReactElement {
           const top = pile[pile.length - 1] ?? null;
           const src: CardSource = { area: 'foundation', suit };
           const isTarget = isTargetFoundation(validTargets, suit);
+          const isFoundationDragging = hideSrc?.area === 'foundation' && (hideSrc as { area: 'foundation'; suit: string }).suit === suit;
           return top ? (
             <CardView
               key={suit}
               card={top}
               isTarget={isTarget}
+              className={isFoundationDragging ? 'card--dragging' : ''}
               onClick={() => selected ? clickTarget({ area: 'foundation', suit }) : clickCard(src)}
               onDragStart={() => handleDragStart(src)}
               onDragEnd={handleDragEnd}
@@ -198,9 +204,9 @@ export function SolitaireBoard(): React.ReactElement {
                     selected.col === colIdx &&
                     cardIdx >= selected.cardIndex;
                   const isCardHint = isHintSrc(hint, src);
-                  const isDragging = dragSrc?.area === 'tableau' &&
-                    (dragSrc as { area: 'tableau'; col: number; cardIndex: number }).col === colIdx &&
-                    cardIdx >= (dragSrc as { area: 'tableau'; col: number; cardIndex: number }).cardIndex;
+                  const isDragging = hideSrc?.area === 'tableau' &&
+                    (hideSrc as { area: 'tableau'; col: number; cardIndex: number }).col === colIdx &&
+                    cardIdx >= (hideSrc as { area: 'tableau'; col: number; cardIndex: number }).cardIndex;
                   return (
                     <CardView
                       key={`${card.suit}${card.rank}`}

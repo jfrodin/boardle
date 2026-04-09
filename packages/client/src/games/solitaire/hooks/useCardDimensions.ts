@@ -11,7 +11,7 @@ export interface CardDimensions {
 const CARD_RATIO = 110 / 78;
 const FACEDOWN_RATIO = 18 / 110;
 const FACEUP_RATIO = 28 / 110;
-const MAX_CARD_W = 78;
+const MAX_CARD_W = 110;
 
 // Everything on screen besides the cards themselves:
 // game-header + wrapper padding + row gap + bottom padding + autocomplete area
@@ -28,8 +28,10 @@ function compute(): CardDimensions {
   // Width: 7 cards + 6 gaps must fit in viewport
   const cardWByWidth = (vw - hPad - 6 * gap) / 7;
 
-  // Height: top-row (1×cardH) + tableau (1 + 6×facedown) must fit
-  const heightFactor = 1 + 1 + 6 * FACEDOWN_RATIO; // ≈ 2.98
+  // Height: top-row (1×cardH) + tableau allowing for mid-game growth (mix of
+  // face-down and face-up offsets). Using a realistic mid-game estimate so
+  // initial sizing is comfortable without under-sizing for small screens.
+  const heightFactor = 1 + 1 + 3 * FACEDOWN_RATIO + 6 * FACEUP_RATIO; // ≈ 3.57
   const cardHByHeight = (vh - VPAD) / heightFactor;
   const cardWByHeight = cardHByHeight / CARD_RATIO;
 

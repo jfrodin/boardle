@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { GameState, PlayerSide } from '@boardly/shared';
 import { useGameStore } from '../../store/gameStore.ts';
 import { wsService } from '../../../../shared/services/wsService.ts';
@@ -14,6 +14,7 @@ export function GameOverModal({ state, playerSide }: GameOverModalProps): React.
   const opponentUsername = useGameStore(s => s.opponentUsername);
   const mode = useGameStore(s => s.mode);
   const rematchRequested = useGameStore(s => s.rematchRequested);
+  const [rematchSent, setRematchSent] = useState(false);
 
   const { winner, board } = state;
   const si = playerSide === 'SOUTH' ? 0 : 1;
@@ -35,6 +36,7 @@ export function GameOverModal({ state, playerSide }: GameOverModalProps): React.
 
   function handleRematch(): void {
     wsService.send({ type: 'REMATCH' });
+    setRematchSent(true);
   }
 
   function handleHome(): void {
@@ -65,11 +67,11 @@ export function GameOverModal({ state, playerSide }: GameOverModalProps): React.
           </div>
         </div>
         <div className="modal-actions">
-          <button className="primary-btn" onClick={handleRematch}>
+          <button className="primary-btn" onClick={handleRematch} disabled={rematchSent && !rematchRequested}>
             {mode === 'online' && rematchRequested ? 'Accept Rematch' : 'Rematch'}
           </button>
-          {mode === 'online' && !rematchRequested && (
-            <p className="rematch-hint">Waiting for opponent to accept...</p>
+          {mode === 'online' && rematchSent && !rematchRequested && (
+            <p className="rematch-hint">Waiting for opponent...</p>
           )}
           <button className="secondary-btn" onClick={handleHome}>
             Main Menu
