@@ -21,7 +21,10 @@ import { HomeScreen as SolitaireHome } from './games/solitaire/HomeScreen.tsx';
 import { GameScreen as SolitaireGame } from './games/solitaire/GameScreen.tsx';
 import { HomeScreen as YatzyHome } from './games/yatzy/HomeScreen.tsx';
 import { GameScreen as YatzyGame } from './games/yatzy/GameScreen.tsx';
+import { HomeScreen as Connect4Home } from './games/connect4/HomeScreen.tsx';
+import { Connect4GameScreen } from './games/connect4/GameScreen.tsx';
 import { useCheckersServerMessages } from './games/checkers/hooks/useServerMessages.ts';
+import { useConnect4ServerMessages } from './games/connect4/hooks/useServerMessages.ts';
 import { useAuthStore } from './shared/store/authStore.ts';
 import { useEffect } from 'react';
 
@@ -37,6 +40,7 @@ function RootLayout(): React.ReactElement {
   // WS message handlers must live here so they stay mounted across all routes
   useServerMessages();
   useCheckersServerMessages();
+  useConnect4ServerMessages();
 
   // Wait for /auth/me to resolve before rendering — prevents flash of logged-out state
   if (!initialized) return <></>;
@@ -148,6 +152,24 @@ const yatzyGameRoute = createRoute({
   component: YatzyGame,
 });
 
+const connect4Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/connect4',
+  component: Connect4Home,
+});
+
+const connect4LobbyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/connect4/lobby',
+  component: LobbyScreen,
+});
+
+const connect4GameRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/connect4/game',
+  component: Connect4GameScreen,
+});
+
 // ---- Router ----
 
 const routeTree = rootRoute.addChildren([
@@ -166,6 +188,9 @@ const routeTree = rootRoute.addChildren([
   solitaireGameRoute,
   yatzyRoute,
   yatzyGameRoute,
+  connect4Route,
+  connect4LobbyRoute,
+  connect4GameRoute,
 ]);
 
 export const router = createRouter({ routeTree });

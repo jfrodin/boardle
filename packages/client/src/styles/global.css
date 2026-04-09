@@ -1693,3 +1693,155 @@ a { touch-action: manipulation; }
   .card-suit-lg { font-size: 1.2rem; }
   .card-rank { font-size: 0.8rem; }
 }
+
+/* =====================================================
+   CONNECT FOUR
+   ===================================================== */
+
+.theme-connect4 {
+  --accent: #dc2626;
+  --accent-light: #f87171;
+  --accent-glow: rgba(220, 38, 38, 0.35);
+  --c4-south: #ef4444;
+  --c4-north: #facc15;
+  --c4-south-glow: rgba(239, 68, 68, 0.6);
+  --c4-north-glow: rgba(250, 204, 21, 0.6);
+  --c4-board-bg: #1e3a8a;
+  --c4-cell-bg: #0f172a;
+}
+.theme-connect4.home-screen { background: radial-gradient(ellipse at 50% 0%, #1a0000 0%, #0d1117 65%); }
+.theme-connect4.game-screen { background: #0d0d0d; }
+
+/* Portal card accent */
+.game-card[data-game="connect4"]::before { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.game-card[data-game="connect4"] .game-card-meta { color: #f87171; }
+
+/* Board wrapper */
+.c4-board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  user-select: none;
+}
+
+/* Drop zone row */
+.c4-drop-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  width: min(min(90vw, 90vh - 80px), 490px);
+}
+
+.c4-drop-btn {
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: background var(--transition);
+  position: relative;
+}
+.c4-drop-btn:disabled { cursor: default; }
+.c4-drop-btn--active { background: rgba(255,255,255,0.07); }
+
+.c4-preview {
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: c4-preview-bounce 0.4s ease infinite alternate;
+}
+.c4-preview--south { background: var(--c4-south); }
+.c4-preview--north { background: var(--c4-north); }
+@keyframes c4-preview-bounce {
+  from { transform: translateY(-4px); }
+  to   { transform: translateY(2px); }
+}
+
+/* Board grid */
+.c4-board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  width: min(min(90vw, 90vh - 80px), 490px);
+  aspect-ratio: 7 / 6;
+  background: var(--c4-board-bg);
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 6px;
+  gap: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+.c4-cell {
+  background: var(--c4-cell-bg);
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+
+.c4-disc {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+
+.c4-cell--south .c4-disc {
+  background: var(--c4-south);
+  box-shadow: 0 0 10px var(--c4-south-glow), inset 0 2px 4px rgba(255,255,255,0.2);
+  animation: c4-drop 0.22s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.c4-cell--north .c4-disc {
+  background: var(--c4-north);
+  box-shadow: 0 0 10px var(--c4-north-glow), inset 0 2px 4px rgba(255,255,255,0.2);
+  animation: c4-drop 0.22s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+
+@keyframes c4-drop {
+  from { transform: scaleY(0.6) translateY(-20%); opacity: 0.5; }
+  to   { transform: scaleY(1)   translateY(0);    opacity: 1; }
+}
+
+.c4-cell--winning .c4-disc {
+  animation: c4-win-pulse 0.7s ease-in-out infinite alternate;
+}
+@keyframes c4-win-pulse {
+  from { filter: brightness(1);   box-shadow: 0 0 10px var(--c4-south-glow); }
+  to   { filter: brightness(1.4); box-shadow: 0 0 24px var(--c4-south-glow); }
+}
+.c4-cell--north.c4-cell--winning .c4-disc {
+  animation: c4-win-pulse-north 0.7s ease-in-out infinite alternate;
+}
+@keyframes c4-win-pulse-north {
+  from { filter: brightness(1);   box-shadow: 0 0 10px var(--c4-north-glow); }
+  to   { filter: brightness(1.4); box-shadow: 0 0 24px var(--c4-north-glow); }
+}
+
+/* Turn label in header */
+.c4-turn-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  min-width: 80px;
+  text-align: right;
+}
+
+/* Game over opponent name */
+.c4-gameover-opponent {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: -0.75rem 0 0;
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+  .c4-board { padding: 4px; gap: 4px; }
+  .c4-drop-btn { height: 30px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .c4-drop-btn { height: 24px; }
+  .c4-board { padding: 3px; gap: 3px; border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+}

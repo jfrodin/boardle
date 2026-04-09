@@ -37,7 +37,7 @@ const GAMES: GameCard[] = [
     description: 'Drop discs and line up four in a row before your opponent.',
     players: '1–2 players',
     emoji: '🔴',
-    available: false,
+    available: true,
     path: '/connect4',
   },
   {
@@ -48,15 +48,6 @@ const GAMES: GameCard[] = [
     emoji: '🃏',
     available: true,
     path: '/solitaire',
-  },
-  {
-    id: 'backgammon',
-    title: 'Backgammon',
-    description: 'Race your pieces home while blocking your opponent. Dice and strategy.',
-    players: '1–2 players',
-    emoji: '🎯',
-    available: false,
-    path: '/backgammon',
   },
   {
     id: 'checkers',

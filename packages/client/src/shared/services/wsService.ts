@@ -35,14 +35,14 @@ class WsService {
       console.log('[WS] connected');
       // Auth is handled automatically via the HttpOnly cookie sent with the upgrade request.
 
-      // Try to restore an active session (Kalaha or Checkers)
+      // Try to restore an active session (Kalaha, Checkers, or Connect4)
       const kalahaStored = useGameStore.getState();
       const roomId =
         kalahaStored.roomId ?? loadSession('kalahaRoomId') ??
-        loadSession('checkersRoomId');
+        loadSession('checkersRoomId') ?? loadSession('connect4RoomId');
       const playerSide =
         kalahaStored.playerSide ?? loadSession('kalahaSide') ??
-        loadSession('checkersSide');
+        loadSession('checkersSide') ?? loadSession('connect4Side');
 
       if (isValidRoomId(roomId) && isValidSide(playerSide)) {
         this.ws!.send(JSON.stringify({ type: 'JOIN_ROOM', roomId, playerSide }));

@@ -2,7 +2,9 @@ import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from '@fastify/websocket';
 import type { AiSkill, ClientMessage, ServerMessage } from '@boardly/shared';
 import { RoomManager } from '../game/RoomManager.js';
+import { GameRoom } from '../game/GameRoom.js';
 import { CheckersRoom } from '../game/CheckersRoom.js';
+import { Connect4Room } from '../game/Connect4Room.js';
 
 interface AuthUser {
   userId: string;
@@ -115,6 +117,12 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
         wsRoomMap.set(ws, room.id);
         send(ws, { type: 'ROOM_JOINED', roomId: room.id, side: 'SOUTH' });
         room.start();
+      } else if (msg.gameId === 'connect4') {
+        const opponentLabel = `AI (${msg.skill.charAt(0).toUpperCase() + msg.skill.slice(1)})`;
+        const room = manager.createConnect4AiRoom(ws, msg.skill, user?.username, opponentLabel);
+        wsRoomMap.set(ws, room.id);
+        send(ws, { type: 'ROOM_JOINED', roomId: room.id, side: 'SOUTH' });
+        room.start();
       } else {
         const animDelay = Math.min(MAX_ANIM_DELAY, Math.max(MIN_ANIM_DELAY, msg.animDelay ?? 400));
         const opponentLabel = `AI (${msg.skill.charAt(0).toUpperCase() + msg.skill.slice(1)})`;
@@ -133,13 +141,11 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
       }
       send(ws, { type: 'WAITING_FOR_OPPONENT' });
       if (msg.gameId === 'checkers') {
-        manager.joinCheckersQueue(ws, user).then(room => {
-          wsRoomMap.set(ws, room.id);
-        });
+        manager.joinCheckersQueue(ws, user).then(room => { wsRoomMap.set(ws, room.id); });
+      } else if (msg.gameId === 'connect4') {
+        manager.joinConnect4Queue(ws, user).then(room => { wsRoomMap.set(ws, room.id); });
       } else {
-        manager.joinQueue(ws, user).then(room => {
-          wsRoomMap.set(ws, room.id);
-        });
+        manager.joinQueue(ws, user).then(room => { wsRoomMap.set(ws, room.id); });
       }
       break;
     }
@@ -163,25 +169,21 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
 
     case 'MAKE_MOVE':
     case 'CHECKERS_MOVE':
+    case 'CONNECT4_MOVE':
     case 'LEAVE_ROOM':
     case 'REMATCH': {
       const roomId = wsRoomMap.get(ws);
-      if (!roomId) {
-        sendError(ws, 'NO_ROOM', 'Not in a room');
-        return;
-      }
+      if (!roomId) { sendError(ws, 'NO_ROOM', 'Not in a room'); return; }
       const room = manager.getRoom(roomId);
-      if (!room) {
-        sendError(ws, 'ROOM_NOT_FOUND', 'Room not found');
-        return;
-      }
-      if (msg.type === 'MAKE_MOVE' && room instanceof CheckersRoom) {
-        sendError(ws, 'WRONG_GAME', 'This room is for Checkers');
-        return;
+      if (!room) { sendError(ws, 'ROOM_NOT_FOUND', 'Room not found'); return; }
+      if (msg.type === 'MAKE_MOVE' && !(room instanceof GameRoom)) {
+        sendError(ws, 'WRONG_GAME', 'Wrong game type'); return;
       }
       if (msg.type === 'CHECKERS_MOVE' && !(room instanceof CheckersRoom)) {
-        sendError(ws, 'WRONG_GAME', 'This room is not a Checkers room');
-        return;
+        sendError(ws, 'WRONG_GAME', 'Wrong game type'); return;
+      }
+      if (msg.type === 'CONNECT4_MOVE' && !(room instanceof Connect4Room)) {
+        sendError(ws, 'WRONG_GAME', 'Wrong game type'); return;
       }
       room.handleMessage(ws, msg);
       break;

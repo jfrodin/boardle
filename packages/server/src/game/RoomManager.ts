@@ -2,8 +2,9 @@ import type { WebSocket } from '@fastify/websocket';
 import type { AiSkill } from '@boardly/shared';
 import { GameRoom } from './GameRoom.js';
 import { CheckersRoom } from './CheckersRoom.js';
+import { Connect4Room } from './Connect4Room.js';
 
-type AnyRoom = GameRoom | CheckersRoom;
+type AnyRoom = GameRoom | CheckersRoom | Connect4Room;
 
 interface QueueEntry<T> {
   ws: WebSocket;
@@ -15,6 +16,7 @@ export class RoomManager {
   private rooms = new Map<string, AnyRoom>();
   private kalahaQueue: QueueEntry<GameRoom>[] = [];
   private checkersQueue: QueueEntry<CheckersRoom>[] = [];
+  private connect4Queue: QueueEntry<Connect4Room>[] = [];
 
   createAiRoom(
     ws: WebSocket,
@@ -79,9 +81,36 @@ export class RoomManager {
     });
   }
 
+  createConnect4AiRoom(ws: WebSocket, skill: AiSkill, playerUsername?: string, aiUsername?: string): Connect4Room {
+    const room = new Connect4Room('ai', skill);
+    room.addPlayer(ws, playerUsername ?? 'Player', aiUsername ?? `AI (${skill})`);
+    room.setOnEmpty(() => this.rooms.delete(room.id));
+    this.rooms.set(room.id, room);
+    return room;
+  }
+
+  joinConnect4Queue(ws: WebSocket, user: { userId: string; username: string }): Promise<Connect4Room> {
+    return new Promise(resolve => {
+      if (this.connect4Queue.length > 0) {
+        const waiting = this.connect4Queue.shift()!;
+        const room = new Connect4Room('online');
+        room.addPlayer(waiting.ws, waiting.username, user.username);
+        room.addPlayer(ws, user.username, waiting.username);
+        room.setOnEmpty(() => this.rooms.delete(room.id));
+        this.rooms.set(room.id, room);
+        room.start();
+        waiting.resolve(room);
+        resolve(room);
+      } else {
+        this.connect4Queue.push({ ws, username: user.username, resolve });
+      }
+    });
+  }
+
   removeFromQueue(ws: WebSocket): void {
     this.kalahaQueue = this.kalahaQueue.filter(e => e.ws !== ws);
     this.checkersQueue = this.checkersQueue.filter(e => e.ws !== ws);
+    this.connect4Queue = this.connect4Queue.filter(e => e.ws !== ws);
   }
 
   getRoom(id: string): AnyRoom | undefined {
