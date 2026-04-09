@@ -9,7 +9,6 @@ export function TipJar(): React.ReactElement {
     <div className={`tipjar${expanded ? ' tipjar--expanded' : ''}`}>
       {expanded ? (
         <>
-          <span className="tipjar-text">Enjoying the games?</span>
           <a
             href={KOFI_URL}
             target="_blank"
@@ -17,20 +16,20 @@ export function TipJar(): React.ReactElement {
             className="tipjar-link"
             onClick={() => setExpanded(false)}
           >
-            🎲 Leave a tip
+            Click here ❤️
           </a>
           <button className="tipjar-close" onClick={() => setExpanded(false)} aria-label="Close">✕</button>
         </>
       ) : (
         <div className="tipjar-collapsed">
-          <span className="tipjar-nudge">free games, no strings →</span>
+          <span className="tipjar-nudge">Want to support the project?</span>
           <button
             className="tipjar-toggle"
             onClick={() => setExpanded(true)}
-            aria-label="Tip jar"
+            aria-label="Support the project"
             title="Support the project"
           >
-            🎲
+            ❤️
           </button>
         </div>
       )}
