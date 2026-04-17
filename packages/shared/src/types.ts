@@ -39,18 +39,20 @@ export interface Move {
 // ---- WebSocket protocol ----
 
 /** Game identifier — used to route messages when multiple games share one server */
-export type GameId = 'kalaha' | 'checkers' | 'connect4';
+export type GameId = 'kalaha' | 'checkers' | 'connect4' | 'ludo';
 
 export type ClientMessage =
   | { type: 'AUTH'; token: string }
   | { type: 'JOIN_QUEUE'; gameId: GameId }
-  | { type: 'JOIN_ROOM'; roomId: string; playerSide?: PlayerSide }
+  | { type: 'JOIN_ROOM'; roomId: string; playerSide?: PlayerSide; ludoColor?: import('./ludoTypes.js').LudoColor }
   | { type: 'START_AI_GAME'; gameId: GameId; skill: AiSkill; animDelay?: number }
   | { type: 'MAKE_MOVE'; move: Move }
   | { type: 'LEAVE_ROOM' }
   | { type: 'REMATCH' }
   | { type: 'CHECKERS_MOVE'; move: import('./checkersTypes.js').CheckersMove }
-  | { type: 'CONNECT4_MOVE'; col: number };
+  | { type: 'CONNECT4_MOVE'; col: number }
+  | { type: 'LUDO_ROLL' }
+  | { type: 'LUDO_MOVE'; pieceIndex: number };
 
 export type ServerMessage =
   | { type: 'AUTH_OK'; username: string }
@@ -69,4 +71,7 @@ export type ServerMessage =
   | { type: 'CHECKERS_GAME_OVER'; state: import('./checkersTypes.js').CheckersGameState; lastMove?: import('./checkersTypes.js').CheckersMove }
   | { type: 'CONNECT4_GAME_START'; state: import('./connect4Types.js').Connect4GameState; side: PlayerSide; mode: GameMode; skill?: AiSkill; opponentUsername?: string; roomId?: string }
   | { type: 'CONNECT4_STATE_UPDATE'; state: import('./connect4Types.js').Connect4GameState; lastMove: import('./connect4Types.js').Connect4Move }
-  | { type: 'CONNECT4_GAME_OVER'; state: import('./connect4Types.js').Connect4GameState; lastMove?: import('./connect4Types.js').Connect4Move };
+  | { type: 'CONNECT4_GAME_OVER'; state: import('./connect4Types.js').Connect4GameState; lastMove?: import('./connect4Types.js').Connect4Move }
+  | { type: 'LUDO_GAME_START'; state: import('./ludoTypes.js').LudoGameState; myColor: import('./ludoTypes.js').LudoColor; skill: AiSkill; roomId: string }
+  | { type: 'LUDO_STATE_UPDATE'; state: import('./ludoTypes.js').LudoGameState; lastMove: import('./ludoTypes.js').LudoMove | null }
+  | { type: 'LUDO_GAME_OVER'; state: import('./ludoTypes.js').LudoGameState };

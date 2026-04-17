@@ -23,8 +23,11 @@ import { HomeScreen as YatzyHome } from './games/yatzy/HomeScreen.tsx';
 import { GameScreen as YatzyGame } from './games/yatzy/GameScreen.tsx';
 import { HomeScreen as Connect4Home } from './games/connect4/HomeScreen.tsx';
 import { Connect4GameScreen } from './games/connect4/GameScreen.tsx';
+import { HomeScreen as LudoHome } from './games/ludo/HomeScreen.tsx';
+import { LudoGameScreen } from './games/ludo/GameScreen.tsx';
 import { useCheckersServerMessages } from './games/checkers/hooks/useServerMessages.ts';
 import { useConnect4ServerMessages } from './games/connect4/hooks/useServerMessages.ts';
+import { useLudoServerMessages } from './games/ludo/hooks/useServerMessages.ts';
 import { useAuthStore } from './shared/store/authStore.ts';
 import { useEffect } from 'react';
 
@@ -41,6 +44,7 @@ function RootLayout(): React.ReactElement {
   useServerMessages();
   useCheckersServerMessages();
   useConnect4ServerMessages();
+  useLudoServerMessages();
 
   // Wait for /auth/me to resolve before rendering — prevents flash of logged-out state
   if (!initialized) return <></>;
@@ -170,6 +174,24 @@ const connect4GameRoute = createRoute({
   component: Connect4GameScreen,
 });
 
+const ludoRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/ludo',
+  component: LudoHome,
+});
+
+const ludoLobbyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/ludo/lobby',
+  component: LobbyScreen,
+});
+
+const ludoGameRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/ludo/game',
+  component: LudoGameScreen,
+});
+
 // ---- Router ----
 
 const routeTree = rootRoute.addChildren([
@@ -191,6 +213,9 @@ const routeTree = rootRoute.addChildren([
   connect4Route,
   connect4LobbyRoute,
   connect4GameRoute,
+  ludoRoute,
+  ludoLobbyRoute,
+  ludoGameRoute,
 ]);
 
 export const router = createRouter({ routeTree });

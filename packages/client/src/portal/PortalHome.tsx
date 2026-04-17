@@ -58,6 +58,15 @@ const GAMES: GameCard[] = [
     available: true,
     path: '/checkers',
   },
+  {
+    id: 'ludo',
+    title: 'Ludo',
+    description: 'Race your pieces around the board and get them all home before anyone else.',
+    players: '1–4 players',
+    emoji: '🎲',
+    available: true,
+    path: '/ludo',
+  },
 ];
 
 export function PortalHome(): React.ReactElement {

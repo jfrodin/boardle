@@ -1,10 +1,11 @@
 import type { WebSocket } from '@fastify/websocket';
-import type { AiSkill } from '@boardly/shared';
+import type { AiSkill, LudoColor } from '@boardly/shared';
 import { GameRoom } from './GameRoom.js';
 import { CheckersRoom } from './CheckersRoom.js';
 import { Connect4Room } from './Connect4Room.js';
+import { LudoRoom } from './LudoRoom.js';
 
-type AnyRoom = GameRoom | CheckersRoom | Connect4Room;
+type AnyRoom = GameRoom | CheckersRoom | Connect4Room | LudoRoom;
 
 interface QueueEntry<T> {
   ws: WebSocket;
@@ -17,6 +18,8 @@ export class RoomManager {
   private kalahaQueue: QueueEntry<GameRoom>[] = [];
   private checkersQueue: QueueEntry<CheckersRoom>[] = [];
   private connect4Queue: QueueEntry<Connect4Room>[] = [];
+  /** Pending Ludo room waiting to fill up before starting */
+  private ludoPendingRoom: LudoRoom | null = null;
 
   createAiRoom(
     ws: WebSocket,
@@ -105,6 +108,40 @@ export class RoomManager {
         this.connect4Queue.push({ ws, username: user.username, resolve });
       }
     });
+  }
+
+  createLudoAiRoom(ws: WebSocket, skill: AiSkill, username: string): LudoRoom {
+    const room = new LudoRoom(skill);
+    room.addHuman(ws, username);
+    room.setOnEmpty(() => this.rooms.delete(room.id));
+    this.rooms.set(room.id, room);
+    return room;
+  }
+
+  joinLudoQueue(ws: WebSocket, skill: AiSkill, username: string): { room: LudoRoom; color: import('@boardly/shared').LudoColor } {
+    if (!this.ludoPendingRoom) {
+      this.ludoPendingRoom = new LudoRoom(skill);
+      const pendingId = this.ludoPendingRoom.id;
+      this.ludoPendingRoom.setOnEmpty(() => {
+        this.rooms.delete(pendingId);
+        if (this.ludoPendingRoom?.id === pendingId) this.ludoPendingRoom = null;
+      });
+      this.rooms.set(this.ludoPendingRoom.id, this.ludoPendingRoom);
+      this.ludoPendingRoom.scheduleStart();
+    }
+    const room = this.ludoPendingRoom;
+    const color = room.addHuman(ws, username);
+    if (room.isFull) {
+      this.ludoPendingRoom = null;
+      room.cancelStartTimer();
+      room.start();
+    }
+    return { room, color };
+  }
+
+  getLudoRoom(id: string): LudoRoom | undefined {
+    const room = this.rooms.get(id);
+    return room instanceof LudoRoom ? room : undefined;
   }
 
   removeFromQueue(ws: WebSocket): void {

@@ -1845,3 +1845,110 @@ a { touch-action: manipulation; }
   .c4-drop-btn { height: 24px; }
   .c4-board { padding: 3px; gap: 3px; border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
 }
+
+/* ============================================================
+   LUDO
+   ============================================================ */
+
+.theme-ludo {
+  --ludo-red: #ef4444;
+  --ludo-green: #22c55e;
+  --ludo-yellow: #eab308;
+  --ludo-blue: #3b82f6;
+}
+
+.theme-ludo.home-screen { background: radial-gradient(ellipse at 50% 0%, #1a001a 0%, #0d1117 65%); }
+.theme-ludo.game-screen { background: #0d1117; }
+
+.game-card[data-game="ludo"]::before { background: linear-gradient(90deg, #a855f7, #7c3aed); }
+.game-card[data-game="ludo"] .game-card-meta { color: #a855f7; }
+
+/* Board wrapper */
+.ludo-board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  width: 100%;
+}
+
+/* Controls */
+.ludo-controls {
+  text-align: center;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ludo-roll-btn {
+  font-size: 1.1rem;
+  padding: 0.6rem 2rem;
+}
+
+.ludo-dice-result {
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1.2rem;
+}
+
+.ludo-waiting {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.ludo-winner {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+
+/* Player list */
+.ludo-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 600px;
+}
+
+.ludo-player {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  font-size: 0.82rem;
+  transition: border-color 0.2s;
+}
+
+.ludo-player--active { opacity: 1; }
+.ludo-player:not(.ludo-player--active) { opacity: 0.6; }
+.ludo-player--finished { opacity: 0.4; text-decoration: line-through; }
+
+.ludo-player-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ludo-player-name {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.ludo-player-pieces {
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  font-size: 0.75rem;
+}

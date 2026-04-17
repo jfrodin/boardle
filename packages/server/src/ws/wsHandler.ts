@@ -5,6 +5,7 @@ import { RoomManager } from '../game/RoomManager.js';
 import { GameRoom } from '../game/GameRoom.js';
 import { CheckersRoom } from '../game/CheckersRoom.js';
 import { Connect4Room } from '../game/Connect4Room.js';
+import { LudoRoom } from '../game/LudoRoom.js';
 
 interface AuthUser {
   userId: string;
@@ -111,7 +112,11 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
         sendError(ws, 'INVALID_SKILL', 'Invalid skill level');
         return;
       }
-      if (msg.gameId === 'checkers') {
+      if (msg.gameId === 'ludo') {
+        const room = manager.createLudoAiRoom(ws, msg.skill, user?.username ?? 'Player');
+        wsRoomMap.set(ws, room.id);
+        room.start();
+      } else if (msg.gameId === 'checkers') {
         const opponentLabel = `AI (${msg.skill.charAt(0).toUpperCase() + msg.skill.slice(1)})`;
         const room = manager.createCheckersAiRoom(ws, msg.skill, user?.username, opponentLabel);
         wsRoomMap.set(ws, room.id);
@@ -140,7 +145,12 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
         return;
       }
       send(ws, { type: 'WAITING_FOR_OPPONENT' });
-      if (msg.gameId === 'checkers') {
+      if (msg.gameId === 'ludo') {
+        const { room, color } = manager.joinLudoQueue(ws, 'medium', user.username);
+        wsRoomMap.set(ws, room.id);
+        // Store color in room map via a separate side-channel; LUDO_GAME_START will carry it
+        void color;
+      } else if (msg.gameId === 'checkers') {
         manager.joinCheckersQueue(ws, user).then(room => { wsRoomMap.set(ws, room.id); });
       } else if (msg.gameId === 'connect4') {
         manager.joinConnect4Queue(ws, user).then(room => { wsRoomMap.set(ws, room.id); });
@@ -156,7 +166,14 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
         sendError(ws, 'ROOM_NOT_FOUND', 'Room not found');
         return;
       }
-      if (msg.playerSide) {
+      if (room instanceof LudoRoom && msg.ludoColor) {
+        const rejoined = room.tryReconnect(ws, msg.ludoColor);
+        if (!rejoined) {
+          sendError(ws, 'RECONNECT_FAILED', 'Could not rejoin room');
+        } else {
+          wsRoomMap.set(ws, room.id);
+        }
+      } else if (msg.playerSide) {
         const rejoined = room.tryReconnect(ws, msg.playerSide);
         if (!rejoined) {
           sendError(ws, 'RECONNECT_FAILED', 'Could not rejoin room');
@@ -167,6 +184,8 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
       break;
     }
 
+    case 'LUDO_ROLL':
+    case 'LUDO_MOVE':
     case 'MAKE_MOVE':
     case 'CHECKERS_MOVE':
     case 'CONNECT4_MOVE':
@@ -176,6 +195,9 @@ function handleMessage(ws: WebSocket, msg: ClientMessage, fastify: FastifyInstan
       if (!roomId) { sendError(ws, 'NO_ROOM', 'Not in a room'); return; }
       const room = manager.getRoom(roomId);
       if (!room) { sendError(ws, 'ROOM_NOT_FOUND', 'Room not found'); return; }
+      if ((msg.type === 'LUDO_ROLL' || msg.type === 'LUDO_MOVE') && !(room instanceof LudoRoom)) {
+        sendError(ws, 'WRONG_GAME', 'Wrong game type'); return;
+      }
       if (msg.type === 'MAKE_MOVE' && !(room instanceof GameRoom)) {
         sendError(ws, 'WRONG_GAME', 'Wrong game type'); return;
       }
